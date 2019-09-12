@@ -1,0 +1,7 @@
+framework module Parsec {
+	umbrella header "parsec.h"
+
+	export *
+	module * { export * }
+}
+

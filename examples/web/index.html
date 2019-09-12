@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset='utf-8'>
+	<title>Parsec Web Client Example</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+	<div class="video-container">
+		<video></video>
+	</div>
+
+	<table id='server-list'>
+	</table>
+
+	<table id='auth'>
+		<tr><td>Email</td>    <td><input id='email'    type='email' autofocus /></td></tr>
+		<tr><td>Password</td> <td><input id='password' type='password' /></td></tr>
+		<tr><td>TFA</td>      <td><input id='tfa'      type='text' /></td></tr>
+	</table>
+
+	<script type='module'>
+		import * as Main from './main.js';
+
+		Main.ui();
+	</script>
+</body>
+
+</html>
