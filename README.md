@@ -34,11 +34,11 @@ The [host](/examples/host) example is a succinct implementation of desktop hosti
 #### Web Client
 The Web Client SDK provides a fully wrapped Parsec client interface only requiring a `<video>` element for initialization. The performance is limited compared to the native SDK clients. See [examples/web](/examples/web) and [sdk/web](/sdk/web) for details.
 
-## C Documentation
+## Documentation
 
 Documentation is procedurally generated from the [parsec.h](/sdk/parsec.h) header file.
 
-https://parsecgaming.com/sdk/docs
+https://parsecgaming.com/docs/sdk
 
 The Parsec SDK is currently in beta and will begin properly versioning `PARSEC_VER_MAJOR` and `PARSEC_VER_MINOR` on October 1, 2019. For the time being, the version will stay at `1.0` while small ABI/API tweaks may be published.
 
@@ -64,4 +64,9 @@ Bindings are maintained by third party developers (thank you!). If you're intere
 | Language | Maintainer | Repo |
 |----------|------------|------|
 | Java | [Richard Smith](https://github.com/electronstudio) | [electronstudio/parsec-java](https://github.com/electronstudio/parsec-java)
+
+## Community
+
+For questions, suggestions, concerns, and support, visit the [Parsec SDK Server on Discord](https://discord.gg/xQaTQt2).
+
 
