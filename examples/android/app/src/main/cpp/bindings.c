@@ -1,14 +1,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
-#include <memory.h>
-
-#include <unistd.h>
 
 #include <jni.h>
 #include <android/log.h>
 
 #include "parsec.h"
-#include "aaudio.h"
 
 static void logCallback(ParsecLogLevel level, char *msg, void *opaque)
 {
@@ -41,24 +37,16 @@ Java_parsec_bindings_Parsec_init(JNIEnv *env, jobject instance)
     Parsec *parsec = NULL;
     ParsecInit(PARSEC_VER, NULL, NULL, &parsec);
 
-    struct aaduio *aaudio = NULL;
-    aaudio_init(&aaudio);
-
     setPointer(env, instance, "parsec", parsec);
-    setPointer(env, instance, "aaudio", aaudio);
 }
 
 JNIEXPORT void JNICALL
 Java_parsec_bindings_Parsec_destroy(JNIEnv *env, jobject instance)
 {
-    struct aaduio *aaudio = getPointer(env, instance, "aaudio");
-    aaudio_destroy(&aaudio);
-
     Parsec *parsec = getPointer(env, instance, "parsec");
     ParsecDestroy(parsec);
 
     setPointer(env, instance, "parsec", NULL);
-    setPointer(env, instance, "aaudio", NULL);
 }
 
 JNIEXPORT jint JNICALL
@@ -79,15 +67,6 @@ Java_parsec_bindings_Parsec_clientConnect(JNIEnv *env, jobject instance, jstring
 }
 
 JNIEXPORT void JNICALL
-Java_parsec_bindings_Parsec_clientPollAudio(JNIEnv *env, jobject instance)
-{
-    Parsec *parsec = getPointer(env, instance, "parsec");
-    struct aaudio *aaudio = getPointer(env, instance, "aaudio");
-
-    ParsecClientPollAudio(parsec, aaudio_play, 0, aaudio);
-}
-
-JNIEXPORT void JNICALL
 Java_parsec_bindings_Parsec_clientDestroy(JNIEnv *env, jobject instance)
 {
     Parsec *parsec = getPointer(env, instance, "parsec");
@@ -100,13 +79,6 @@ Java_parsec_bindings_Parsec_clientSetDimensions(JNIEnv *env, jobject instance,
 {
     Parsec *parsec = getPointer(env, instance, "parsec");
     ParsecClientSetDimensions(parsec, (uint32_t) x, (uint32_t) y, 1.0f);
-}
-
-JNIEXPORT void JNICALL
-Java_parsec_bindings_Parsec_clientGLRenderFrame(JNIEnv *env, jobject instance)
-{
-    Parsec *parsec = getPointer(env, instance, "parsec");
-    ParsecClientGLRenderFrame(parsec, 0);
 }
 
 JNIEXPORT jint JNICALL

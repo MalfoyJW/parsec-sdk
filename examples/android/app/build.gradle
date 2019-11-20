@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.example.parsecdemo"
-        minSdkVersion 27
+        minSdkVersion 26
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"

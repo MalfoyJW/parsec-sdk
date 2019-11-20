@@ -10,7 +10,7 @@ const client = new Parsec(videoElement, (event) => {
 client.connect(sessionId, peerId);
 ```
 
-The constructor takes an HTML5 `<video>` element and can take an optional second callback argument that can receive events such as `connect` and `exit`.
+The constructor takes an HTML5 `<video>` element and can take an optional second callback argument that can receive events such as `connect`, `exit`, `userData`, and `metrics`.
 
 You'll need [Node.js](https://nodejs.org) to run the development server. This project was tested with `node 8.12.0 LTS`.
 

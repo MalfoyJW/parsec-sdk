@@ -1,6 +1,6 @@
 ## Overview
 
-This example was tested with Unity Hub version `2017.4.31f1` on Windows 10 64-bit and macOS Mojave, although the recommended version is `2018.4.7f1` as it is the latest LTS version. It should also work with later versions of Unity Hub.
+This example was tested with Unity Hub version `2017.4.32f1` on Windows 10 64-bit and macOS Mojave, although the recommended version is `2018.4.10f1` as it is the latest LTS version. It should also work with later versions of Unity Hub.
 
 The project is set up with a simple multiplayer structure borrowed from the popular [Tanks Tutorial](https://learn.unity.com/project/tanks-tutorial). The [Parsec Unity SDK](/sdk/ParsecUnity) module lives in [Assets/ParsecUnity](Assets/ParsecUnity).
 
@@ -9,6 +9,8 @@ After running the example, you will be shown a code to pair the example with a P
 You'll then be promted to input some game data to begin hosting. You should NOT select the `public` option unless you want your demo to visible by ALL Parsec users!
 
 After the Parsec SDK has begun hosting, you'll be given a link that can be shared privately for others to join the demo. You may use this link yourself on another computer or in a web browser for testing.
+
+There are two streamers, `ParsecStreamCamera` for streaming one camera, and `ParsecStreamFull` to stream the full end result. They both inherit `ParsecStreamGeneral` which can be used to find it on a camera.
 
 ## Parsec SDK Implementation in [`Assets`](Assets)
 

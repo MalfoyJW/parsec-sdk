@@ -1,11 +1,12 @@
-﻿using ParsecUnity;
+﻿using ParsecGaming;
+using ParsecUnity;
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
     [HideInInspector] public int m_PlayerNumber;
     [HideInInspector] public GameObject m_Instance;
-    [HideInInspector] public Parsec.Parsec.ParsecGuest m_AssignedGuest;
+    [HideInInspector] public Parsec.ParsecGuest m_AssignedGuest;
 
     private PlayerMovement m_Movement;
 

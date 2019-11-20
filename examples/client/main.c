@@ -106,7 +106,7 @@ static int32_t renderThread(void *opaque)
 	void (*glFinish)(void) = (void (*)(void)) SDL_GL_GetProcAddress("glFinish");
 
 	while (!context->done) {
-		ParsecClientGLRenderFrame(context->parsec, 100);
+		ParsecClientGLRenderFrame(context->parsec, NULL, NULL, NULL, 100);
 		SDL_GL_SwapWindow(context->window);
 		glFinish();
 	}

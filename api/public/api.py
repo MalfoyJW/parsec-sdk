@@ -2,6 +2,7 @@ import requests
 import json
 
 API_HOST = 'https://kessel-api.parsecgaming.com/'
+OLD_HOST = 'https://api.parsecgaming.com/'
 
 def auth_codes(game_id):
 	r = requests.post(API_HOST + 'auth/codes',
@@ -30,6 +31,14 @@ def host_invites(session_id, expires_in, max_grants):
 def hosts(session_id):
 	r = requests.get(API_HOST + 'hosts',
 		headers={'Content-Type': 'application/json', 'Authorization': 'Bearer %s' % session_id}
+	)
+
+	return json.loads(r.text), r.status_code
+
+def login(email, password, tfa=''):
+	r = requests.post(OLD_HOST + 'v1/auth',
+		headers={'Content-Type': 'application/json'},
+		data=json.dumps({'email': email, 'password': password, 'tfa': tfa})
 	)
 
 	return json.loads(r.text), r.status_code

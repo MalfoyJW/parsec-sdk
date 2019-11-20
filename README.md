@@ -15,9 +15,6 @@ Desktop mode shares the host's entire desktop (or any fullscreen application) an
 The `ParsecClient` portion of the SDK provides everything necessary to make a connection to a host, send gamepad/mouse/keyboard input, and receive video/audio output from the host. `ParsecClientGLRender` allows the client application to efficiently render the incoming frames.
 
 ## Examples
-
-#### Game Mode Hosting
-[cddNES](https://github.com/chrisd1100/cddNES) is a NES emulator written in C and serves as the canonical example of game mode hosting. It demonstrates polling Parsec guest input, submitting rendered frames via D3D11 and OpenGL, submitting audio, and generally handling guest state and guest events.
   
 #### Game Mode Hosting with Unity
 The Parsec SDK provides the [ParsecUnity](/sdk/ParsecUnity) module for easy integration in Unity games. See [examples/unity](/examples/unity) for details.
@@ -39,8 +36,6 @@ The Web Client SDK provides a fully wrapped Parsec client interface only requiri
 Documentation is procedurally generated from the [parsec.h](/sdk/parsec.h) header file.
 
 https://parsecgaming.com/docs/sdk
-
-The Parsec SDK is currently in beta and will begin properly versioning `PARSEC_VER_MAJOR` and `PARSEC_VER_MINOR` on October 1, 2019. For the time being, the version will stay at `1.0` while small ABI/API tweaks may be published.
 
 ## Obtaining a `sessionID` and `peerID`
 

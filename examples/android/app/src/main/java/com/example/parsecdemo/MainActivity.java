@@ -38,23 +38,23 @@ public class MainActivity extends AppCompatActivity {
         this.parsec = new Parsec();
         this.parsec.setLogCallback();
         this.parsec.init();
+        this.parsec.appInit();
 
         int e = parsec.clientConnect("sessionID", "peerID");
 
         if (e == parsec.PARSEC_OK) {
-            ClientGLSurface surface = new ClientGLSurface(this.getApplicationContext());
+            ClientSurface surface = new ClientSurface(this.getApplicationContext());
             surface.setParsec(parsec);
 
             ViewGroup vg = findViewById(android.R.id.content);
             ViewGroup.LayoutParams params = vg.getLayoutParams();
             this.addContentView(surface, params);
-
-            surface.renderInit();
         }
     }
 
     @Override
-    protected  void onDestroy() {
+    protected void onDestroy() {
+        this.parsec.appDestroy();
         this.parsec.clientDestroy();
         this.parsec.destroy();
 

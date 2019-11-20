@@ -2132,11 +2132,11 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 1561786535}
-  - component: {fileID: 1561786536}
   - component: {fileID: 1561786534}
   - component: {fileID: 1561786533}
   - component: {fileID: 1561786532}
   - component: {fileID: 1561786537}
+  - component: {fileID: 1561786536}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2215,7 +2215,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1561786531}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -411869444, guid: f2ab4bfac6781c04eb48f3901e348e01, type: 3}
+  m_Script: {fileID: 1269098755, guid: f2ab4bfac6781c04eb48f3901e348e01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   onUserAuthenticated:

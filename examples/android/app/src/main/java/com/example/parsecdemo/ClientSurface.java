@@ -1,44 +1,38 @@
 package com.example.parsecdemo;
 
 import android.content.Context;
-import android.opengl.GLSurfaceView;
+import android.view.SurfaceView;
+import android.view.SurfaceHolder;
+
 import android.view.MotionEvent;
-import javax.microedition.khronos.opengles.GL10;
 
 import parsec.bindings.Parsec;
 
-public class ClientGLSurface extends GLSurfaceView {
+public class ClientSurface extends SurfaceView implements SurfaceHolder.Callback {
+
     private Parsec parsec;
 
-    public ClientGLSurface(Context context) {
+    public ClientSurface(Context context) {
         super(context);
+        this.getHolder().addCallback(this);
     }
 
     public void setParsec(Parsec parsec) {
         this.parsec = parsec;
     }
 
-    public void renderInit() {
-        setEGLContextClientVersion(2);
+    public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
+        this.parsec.appDestroySurface();
+        this.parsec.appSetSurface(holder.getSurface());
+        this.parsec.clientSetDimensions(w, h);
+    }
 
-        this.setRenderer(new Renderer() {
-            @Override
-            public void onSurfaceCreated(GL10 gl10, javax.microedition.khronos.egl.EGLConfig eglConfig) {}
+    public void surfaceCreated(SurfaceHolder holder) {
 
-            @Override
-            public void onSurfaceChanged(GL10 gl10, int width, int height) {
-                parsec.clientSetDimensions(width, height);
-            }
+    }
 
-            @Override
-            public void onDrawFrame(GL10 gl10) {
-                parsec.clientPollAudio();
-                parsec.clientGLRenderFrame();
-            }
-        });
-
-        this.setRenderMode(RENDERMODE_CONTINUOUSLY);
-        this.setPreserveEGLContextOnPause(true);
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        this.parsec.appDestroySurface();
     }
 
     @Override

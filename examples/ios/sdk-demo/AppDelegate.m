@@ -64,7 +64,7 @@ bool _glInit = false;
     ParsecClientPollAudio(_parsec, audio_cb, 0, _audio);
     ParsecClientSetDimensions(_parsec, self.window.frame.size.width,
                               self.window.frame.size.height, [[UIScreen mainScreen] scale]);
-    ParsecClientGLRenderFrame(_parsec, 8);
+    ParsecClientGLRenderFrame(_parsec, NULL, NULL, NULL, 8);
     glFinish(); // May improve latency
 }
 

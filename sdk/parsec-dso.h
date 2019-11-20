@@ -109,6 +109,7 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 	GETPROC(ctx, ParsecHostSubmitCursor);
 	GETPROC(ctx, ParsecHostSubmitRumble);
 	GETPROC(ctx, ParsecHostGLSubmitFrame);
+	GETPROC(ctx, ParsecHostD3D9SubmitFrame);
 	GETPROC(ctx, ParsecHostD3D11SubmitFrame);
 
 	ctx->api.ParsecInit(PARSEC_VER, cfg, reserved, &ctx->ps);
@@ -154,6 +155,7 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 #define ParsecHostSubmitCursor(dso, ...)     dso->api.ParsecHostSubmitCursor(dso->ps, __VA_ARGS__)
 #define ParsecHostSubmitRumble(dso, ...)     dso->api.ParsecHostSubmitRumble(dso->ps, __VA_ARGS__)
 #define ParsecHostGLSubmitFrame(dso, ...)    dso->api.ParsecHostGLSubmitFrame(dso->ps, __VA_ARGS__)
+#define ParsecHostD3D9SubmitFrame(dso, ...)  dso->api.ParsecHostD3D9SubmitFrame(dso->ps, __VA_ARGS__)
 #define ParsecHostD3D11SubmitFrame(dso, ...) dso->api.ParsecHostD3D11SubmitFrame(dso->ps, __VA_ARGS__)
 
 #if defined(_WIN32)

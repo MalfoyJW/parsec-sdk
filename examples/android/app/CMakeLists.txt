@@ -35,6 +35,7 @@ set_target_properties( libMain PROPERTIES IMPORTED_LOCATION ${LIB_DST}/${ANDROID
 # CLIENT LIBRARIES
 set(CC_FILES
 	${CPP_ROOT}/bindings.c
+	${CPP_ROOT}/implementation.c
 	${CPP_ROOT}/aaudio.c
 )
 
@@ -46,4 +47,4 @@ target_include_directories(parsec-bindings PRIVATE
 # LINK (Seperated by library origin)
 target_link_libraries(
 	parsec-bindings libMain
-	GLESv2 z jnigraphics mediandk aaudio OpenMAXAL log android)
+	GLESv2 z jnigraphics mediandk aaudio OpenMAXAL log android GLESv2 EGL)
