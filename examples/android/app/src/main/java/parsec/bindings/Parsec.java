@@ -21,6 +21,7 @@ public class Parsec {
     public native void init();
     public native void destroy();
     public native int clientConnect(String sessionID, String peerID);
+    public native int clientGetStatus();
     public native void clientDestroy();
     public native void clientSetDimensions(int x, int y);
     public native int clientSendMouseMotion(boolean relative, int x, int y);

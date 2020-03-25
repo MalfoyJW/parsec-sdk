@@ -21,11 +21,6 @@ struct ImplementationContext {
     bool running;
 };
 
-struct PostRenderContext {
-    EGLDisplay display;
-    EGLSurface surface;
-};
-
 static void *getPointer(JNIEnv *env, jobject instance, const char *name)
 {
     jclass cls = (*env)->GetObjectClass(env, instance);
@@ -48,16 +43,6 @@ static bool preRender(void *opaque)
     return true;
 }
 
-static void postRender(bool success, void *opaque)
-{
-    if (!success) return;
-
-    struct PostRenderContext *ctx = (struct PostRenderContext *)opaque;
-
-    eglSwapBuffers(ctx->display, ctx->surface);
-    glFinish();
-}
-
 static void *renderVideo(void *opaque)
 {
     struct ImplementationContext *ctx = (struct ImplementationContext *)opaque;
@@ -74,7 +59,6 @@ static void *renderVideo(void *opaque)
 
     EGLint contextConfig[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
 
-
     EGLDisplay display;
     EGLint majorVersion;
     EGLint minorVersion;
@@ -84,40 +68,33 @@ static void *renderVideo(void *opaque)
     EGLSurface surface;
     EGLContext context;
 
-    if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
+    if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
         return NULL;
-    }
 
-    if (!eglInitialize(display, &majorVersion, &minorVersion)) {
+    if (!eglInitialize(display, &majorVersion, &minorVersion))
         return NULL;
-    }
 
-    if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs)) {
+    if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs))
         return NULL;
-    }
 
-    if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
+    if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format))
         return NULL;
-    }
 
     ANativeWindow_setBuffersGeometry(ctx->window, 0, 0, format);
 
-    if (!(surface = eglCreateWindowSurface(display, config, ctx->window, 0))) {
+    if (!(surface = eglCreateWindowSurface(display, config, ctx->window, 0)))
         return NULL;
-    }
 
-    if (!(context = eglCreateContext(display, config, 0, contextConfig))) {
+    if (!(context = eglCreateContext(display, config, 0, contextConfig)))
         return NULL;
-    }
 
-    if (!eglMakeCurrent(display, surface, surface, context)) {
+    if (!eglMakeCurrent(display, surface, surface, context))
         return NULL;
-    }
-
-    struct PostRenderContext postRenderContext = {display, surface};
 
     while (ctx->running) {
-        ParsecClientGLRenderFrame(ctx->parsec, preRender, postRender, &postRenderContext, TIMEOUT);
+        ParsecClientGLRenderFrame(ctx->parsec, preRender, NULL, TIMEOUT);
+        eglSwapBuffers(display, surface);
+        glFinish();
     }
 
     return NULL;

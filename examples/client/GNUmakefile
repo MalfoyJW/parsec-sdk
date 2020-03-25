@@ -9,6 +9,7 @@ PLATFORM = linux
 SHARED_LIBS = \
 	-lm \
 	-ldl \
+	-lGL \
 	-lpthread
 endif
 

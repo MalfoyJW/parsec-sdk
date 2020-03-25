@@ -7,21 +7,33 @@
 #define SDL_MAIN_HANDLED
 #include "SDL2/SDL.h"
 
-#define MSG_CLIPBOARD 7
+#define PARSEC_APP_CLIPBOARD_MSG 7
 
 #define WINDOW_W 1280
 #define WINDOW_H 720
 
 #if defined(_WIN32)
-	#define SDK_PATH "../../sdk/windows/parsec.dll"
+	#include <GL/gl.h>
+	#if !defined(BITS)
+		#define BITS 64
+	#endif
+	#if (BITS == 64)
+		#define SDK_PATH "../../sdk/windows/parsec.dll"
+	#else
+		#define SDK_PATH "../../sdk/windows/parsec32.dll"
+	#endif
 #elif defined(__APPLE__)
+	#define GL_SILENCE_DEPRECATION
+	#include <OpenGL/gl.h>
 	#define SDK_PATH "../../sdk/macos/libparsec.dylib"
 #else
+	#include <GL/gl.h>
 	#define SDK_PATH "../../sdk/linux/libparsec.so"
 #endif
 
 struct context {
 	bool done;
+	float scale;
 	ParsecDSO *parsec;
 	SDL_Window *window;
 	SDL_Surface *surface;
@@ -48,7 +60,7 @@ static void userData(struct context *context, uint32_t id, uint32_t bufferKey)
 {
 	char *msg = ParsecGetBuffer(context->parsec, bufferKey);
 
-	if (msg && id == 7) // Parsec application user defined clipboard msg id
+	if (msg && id == PARSEC_APP_CLIPBOARD_MSG)
 		SDL_SetClipboardText(msg);
 
 	ParsecFree(context->parsec, msg);
@@ -103,10 +115,16 @@ static int32_t renderThread(void *opaque)
 	SDL_GLContext *gl = SDL_GL_CreateContext(context->window);
 	SDL_GL_SetSwapInterval(1);
 
-	void (*glFinish)(void) = (void (*)(void)) SDL_GL_GetProcAddress("glFinish");
-
 	while (!context->done) {
-		ParsecClientGLRenderFrame(context->parsec, NULL, NULL, NULL, 100);
+		int32_t w = 0, h = 0;
+		SDL_GetWindowSize(context->window, &w, &h);
+		ParsecClientSetDimensions(context->parsec, w, h, context->scale);
+
+		glViewport(0, 0, w, h);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		ParsecClientGLRenderFrame(context->parsec, NULL, NULL, 100);
 		SDL_GL_SwapWindow(context->window);
 		glFinish();
 	}
@@ -120,7 +138,7 @@ static int32_t renderThread(void *opaque)
 int32_t main(int32_t argc, char **argv)
 {
 	if (argc < 3) {
-		printf("Usage: demo sessionID peerID\n");
+		printf("Usage: client sessionID peerID\n");
 		return 1;
 	}
 
@@ -142,17 +160,13 @@ int32_t main(int32_t argc, char **argv)
 
 	int32_t glW = 0;
 	SDL_GL_GetDrawableSize(context.window, &glW, NULL);
-	float scale = (float) glW / (float) WINDOW_W;
+	context.scale = (float) glW / (float) WINDOW_W;
 
 	ParsecStatus e = ParsecInit(NULL, NULL, SDK_PATH, &context.parsec);
 	if (e != PARSEC_OK) goto except;
 
 	ParsecSetLogCallback(context.parsec, logCallback, NULL);
-
-	e = ParsecClientConnect(context.parsec, NULL, argv[1], argv[2]);
-	if (e != PARSEC_OK) goto except;
-
-	ParsecClientSetDimensions(context.parsec, WINDOW_W, WINDOW_H, scale);
+	ParsecClientConnect(context.parsec, NULL, argv[1], argv[2]);
 
 	SDL_Thread *render_thread = SDL_CreateThread(renderThread, "renderThread", &context);
 	SDL_Thread *audio_thread = SDL_CreateThread(audioThread, "audioThread", &context);
@@ -164,10 +178,6 @@ int32_t main(int32_t argc, char **argv)
 			switch (msg.type) {
 				case SDL_QUIT:
 					context.done = true;
-					break;
-				case SDL_WINDOWEVENT:
-					if (msg.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-						ParsecClientSetDimensions(context.parsec, msg.window.data1, msg.window.data2, scale);
 					break;
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:
@@ -193,9 +203,6 @@ int32_t main(int32_t argc, char **argv)
 					pmsg.mouseWheel.x = msg.wheel.x;
 					pmsg.mouseWheel.y = msg.wheel.y;
 					break;
-				case SDL_CLIPBOARDUPDATE:
-					ParsecClientSendUserData(context.parsec, MSG_CLIPBOARD, SDL_GetClipboardText());
-					break;
 				case SDL_CONTROLLERBUTTONDOWN:
 				case SDL_CONTROLLERBUTTONUP:
 					pmsg.type = MESSAGE_GAMEPAD_BUTTON;
@@ -217,12 +224,17 @@ int32_t main(int32_t argc, char **argv)
 					pmsg.gamepadUnplug.id = msg.cdevice.which;
 					SDL_GameControllerClose(SDL_GameControllerFromInstanceID(msg.cdevice.which));
 					break;
+				case SDL_CLIPBOARDUPDATE:
+					ParsecClientSendUserData(context.parsec, PARSEC_APP_CLIPBOARD_MSG, SDL_GetClipboardText());
+					break;
 			}
 
-			if (pmsg.type != 0) {
-				if (ParsecClientSendMessage(context.parsec, &pmsg) != PARSEC_OK)
-					context.done = true;
-			}
+			if (pmsg.type != 0)
+				ParsecClientSendMessage(context.parsec, &pmsg);
+
+			e = ParsecClientGetStatus(context.parsec, NULL);
+			if (e != PARSEC_CONNECTING && e != PARSEC_OK)
+				context.done = true;
 		}
 
 		for (ParsecClientEvent event; ParsecClientPollEvents(context.parsec, 0, &event);) {

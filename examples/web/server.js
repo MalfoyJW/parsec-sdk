@@ -26,9 +26,15 @@ function timeStamp() {
 
 http.createServer((req, res) => {
 	const parsed = url.parse(req.url);
-	const fileName = parsed.pathname === '/' ? '/index.html' : parsed.pathname;
+	let fileName = parsed.pathname === '/' ? '/index.html' : parsed.pathname;
 	const fileType = fileName.split('.').slice(-1)[0];
-	const fullPath = ((fileName === '/main.js') ? '.' : (paths[fileType] || '.')) + fileName;
+	let fullPath = ((fileName === '/main.js') ? '.' : (paths[fileType] || '.')) + fileName;
+
+	// Redirect requests for the Parsec SDK to /sdk/web
+	if (fileName.indexOf('/sdk') != -1) {
+		fileName = fileName.replace('/sdk', '');
+		fullPath = '../../sdk/web' + fileName;
+	}
 
 	let code = 404;
 	let color = '\x1b[31m';

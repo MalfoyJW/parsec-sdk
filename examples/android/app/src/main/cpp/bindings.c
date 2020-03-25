@@ -66,6 +66,14 @@ Java_parsec_bindings_Parsec_clientConnect(JNIEnv *env, jobject instance, jstring
     return (jint) e;
 }
 
+JNIEXPORT jint JNICALL
+Java_parsec_bindings_Parsec_clientGetStatus(JNIEnv *env, jobject instance)
+{
+    Parsec *parsec = getPointer(env, instance, "parsec");
+
+    return (jint) ParsecClientGetStatus(parsec, NULL);
+}
+
 JNIEXPORT void JNICALL
 Java_parsec_bindings_Parsec_clientDestroy(JNIEnv *env, jobject instance)
 {

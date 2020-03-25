@@ -5,14 +5,14 @@ The Parsec SDK allows your application to make interactive, low-latency peer-to-
 #### Hosting
 The `ParsecHost` portion of the SDK allows a host to accept incoming client connections (guests). There are two modes of operation: **game mode** and **desktop mode**.
 
-Game mode allows your game to add multiplayer functionality to an otherwise local only game. This is achieved via a tight integration into your game's render loop. Game mode requires that the application call `ParsecHostSubmitFrame` and `ParsecHostSubmitAudio`. Input is polled via `ParsecHostPollInput`, exposing input events much like they would appear locally. In game mode, Parsec can only interact with your game and has no access to the OS or any other application.
+Game mode allows your game to add multiplayer functionality to an otherwise local only game. This is achieved via a tight integration into your game's render loop. Game mode requires that the application call one of the `ParsecHostSubmitFrame` functions (supporting OpenGL, D3D9, and D3D11) and `ParsecHostSubmitAudio`. Input is polled via `ParsecHostPollInput`, exposing input events much like they would appear locally. In game mode, Parsec can only interact with your game and has no access to the OS or any other application.
 
 Additionally, game mode can be used to make any game entirely headless from the host's point of view. The game window, rendering swap chain, and audio playback can be removed, leaving the game to accept input from and invisibly output data to Parsec connected guests.
 
 Desktop mode shares the host's entire desktop (or any fullscreen application) and adds additional permissions/approval to the connection process.
 
 #### Client
-The `ParsecClient` portion of the SDK provides everything necessary to make a connection to a host, send gamepad/mouse/keyboard input, and receive video/audio output from the host. `ParsecClientGLRender` allows the client application to efficiently render the incoming frames.
+The `ParsecClient` portion of the SDK provides everything necessary to make a connection to a host, send gamepad/mouse/keyboard input, and receive video/audio output from the host. The `ParsecClientRender` family of functions allow the client application to efficiently render the incoming frames with OpenGL, D3D9, D3D11, or Metal.
 
 ## Examples
   
@@ -29,7 +29,7 @@ The [ios](/examples/ios) and [android](/examples/android) examples demonstrate a
 The [host](/examples/host) example is a succinct implementation of desktop hosting functionality. Desktop hosting is currently only available on Windows.
 
 #### Web Client
-The Web Client SDK provides a fully wrapped Parsec client interface only requiring a `<video>` element for initialization. The performance is limited compared to the native SDK clients. See [examples/web](/examples/web) and [sdk/web](/sdk/web) for details.
+The Parsec Web SDK provides a fully wrapped Parsec client interface only requiring a `<video>` and `<audio>` element for initialization. The performance is limited compared to the native SDK clients. See [examples/web](/examples/web) and [sdk/web](/sdk/web) for details.
 
 ## Documentation
 
@@ -39,9 +39,17 @@ https://parsecgaming.com/docs/sdk
 
 ## Obtaining a `sessionID` and `peerID`
 
-The SDK requires a `sessionID` and `peerID` obtained through the Parsec API to identify users and make secure connections. See the [Public API](/api/public) for details.
+The SDK requires a `sessionID` and `peerID` obtained through the Parsec API to identify users and make secure connections. There are three methods of obtaining a `sessionID`:  
 
-For enterprise customers, refer to the example in [api/enterprise](/api/enterprise) on how to wrap the Enterprise API. 
+- For quick start, testing, and personal use only, see [api/personal](/api/personal). The `/v1/auth` API call may NOT be used in any application distributed to the public or in any enterprise use case.
+- For third party distribution intended for other Parsec users, see [api/third-party](/api/third-party) for OAuth style access delegation.
+- For enterprise customers, see [api/enterprise](/api/enterprise).
+
+## Sharing Private Hosts
+
+The Parsec SDK supports a `secret` property on both the `ParsecHostConfig` and `ParsecClientConfig` structs. If the host sets a secret during `ParsecHostStart`, the client must also provide the same secret during `ParsecClientConnect` in order to make a connection. Your application may choose how to privately share both this `secret` and the host's `peerID` to facilitate features such as link sharing or private games.  
+
+For simple link sharing testing, you may use the URL template https://parsec.gg/g/{peerID}/{secret}/, however this template is used by the Parsec consumer application and may change without notice. It is highly recommended that your application uses a custom method for sharing the `peerID` and `secret`.
 
 ## Using Runtime Linking (DSO)
 

@@ -40,16 +40,14 @@ public class MainActivity extends AppCompatActivity {
         this.parsec.init();
         this.parsec.appInit();
 
-        int e = parsec.clientConnect("sessionID", "peerID");
+        parsec.clientConnect("sessionID", "peerID");
 
-        if (e == parsec.PARSEC_OK) {
-            ClientSurface surface = new ClientSurface(this.getApplicationContext());
-            surface.setParsec(parsec);
+        ClientSurface surface = new ClientSurface(this.getApplicationContext());
+        surface.setParsec(parsec);
 
-            ViewGroup vg = findViewById(android.R.id.content);
-            ViewGroup.LayoutParams params = vg.getLayoutParams();
-            this.addContentView(surface, params);
-        }
+        ViewGroup vg = findViewById(android.R.id.content);
+        ViewGroup.LayoutParams params = vg.getLayoutParams();
+        this.addContentView(surface, params);
     }
 
     @Override

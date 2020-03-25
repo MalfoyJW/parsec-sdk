@@ -1,6 +1,6 @@
 ## Overview
 
-This example was tested with Unity Hub version `2017.4.32f1` on Windows 10 64-bit and macOS Mojave, although the recommended version is `2018.4.10f1` as it is the latest LTS version. It should also work with later versions of Unity Hub.
+This example was tested with Unity Hub version `2017.4.32f1` on Windows 10 64-bit and macOS Mojave, although the recommended version is `2018.4.19f1` as it is the latest LTS version. It should also work with later versions of Unity Hub.
 
 The project is set up with a simple multiplayer structure borrowed from the popular [Tanks Tutorial](https://learn.unity.com/project/tanks-tutorial). The [Parsec Unity SDK](/sdk/ParsecUnity) module lives in [Assets/ParsecUnity](Assets/ParsecUnity).
 
@@ -10,13 +10,14 @@ You'll then be promted to input some game data to begin hosting. You should NOT 
 
 After the Parsec SDK has begun hosting, you'll be given a link that can be shared privately for others to join the demo. You may use this link yourself on another computer or in a web browser for testing.
 
-There are two streamers, `ParsecStreamCamera` for streaming one camera, and `ParsecStreamFull` to stream the full end result. They both inherit `ParsecStreamGeneral` which can be used to find it on a camera.
+There are two streamers, `ParsecStreamCamera` for streaming one camera, and `ParsecStreamFull` to stream the full end result. They both inherit `ParsecStreamGeneral` which can be used to find it on a camera. On the camera there is a property named Game ID, this needs to be filled in for all network calls to work.
+
+You will need to set your project to use Expirimental 4.6 on Unity Version `2017.4` for the scripting runtime engine in the player settings.
 
 ## Parsec SDK Implementation in [`Assets`](Assets)
 
 ### GameManager.cs
 This file, as in the tank demo, in this case we added a players object, that will have the local player in Element 0, and assign remote players to the remaining slots. So Size needs to be at least 1 for local play.
-
 
 `void GetAccessCode()` - This function is assigned to the button to get the user access code to give access for this application to stream. The `streamer.RequestCodeAndPoll` function is the one that gets the values.
 

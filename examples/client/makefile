@@ -1,6 +1,11 @@
+!IF [if /I "%Platform%" EQU "x64" exit 1]
+BITS = 64
+!ELSE
+BITS = 32
+!ENDIF
+
 BIN_NAME = client.exe
 OBJS = main.obj
-STATIC_LIBS = lib/windows/SDL2.lib
 
 CFLAGS = \
 	/nologo \
@@ -10,9 +15,9 @@ CFLAGS = \
 	/MP \
 	-I../../sdk \
 	-Iinclude \
+	-DBITS=$(BITS) \
 	-DWIN32_LEAN_AND_MEAN \
-	-DUNICODE \
-	-DWIN32
+	-DUNICODE
 
 SHARED_LIBS = \
 	libvcruntime.lib \
@@ -29,7 +34,11 @@ SHARED_LIBS = \
 	opengl32.lib \
 	user32.lib \
 	uuid.lib \
-	version.lib
+	version.lib \
+	setupapi.lib
+
+STATIC_LIBS = \
+	lib/windows/SDL2-$(BITS).lib
 
 LD_FLAGS = \
 	/nodefaultlib \

@@ -1,13 +1,7 @@
-import {Parsec} from './parsec.js';
-
-
 /*** API ***/
 
-const OLD_HOST = 'api.parsecgaming.com';
-const HOST = 'kessel-api.parsecgaming.com';
-
 async function auth(email, password, tfa) {
-	const res = await fetch(`https://${OLD_HOST}/v1/auth`, {
+	const res = await fetch(`https://api.parsecgaming.com/v1/auth`, {
 		method: 'post',
 		headers: {
 			'Content-Type': 'application/json; charset=utf-8',
@@ -23,7 +17,7 @@ async function auth(email, password, tfa) {
 }
 
 async function serverList(sessionId) {
-	const res = await fetch(`https://${HOST}/hosts/`, {
+	const res = await fetch(`https://kessel-api.parsecgaming.com/hosts/`, {
 		method: 'get',
 		headers: {
 			'Authorization': 'Bearer ' + sessionId,
@@ -34,77 +28,10 @@ async function serverList(sessionId) {
 }
 
 
-/*** MAIN ***/
 
-function _(selector) {
-	return document.querySelector(selector);
-}
-
-function toggleFullscreen(element) {
-	if (document.webkitFullscreenElement) {
-		document.webkitExitFullscreen();
-
-	} else {
-		element.webkitRequestFullscreen();
-
-		if (navigator.keyboard && navigator.keyboard.lock)
-			navigator.keyboard.lock();
-	}
-}
-
-function runClient(elementVideo, sessionId, serverId) {
-	return new Promise((resolve) => {
-		//set up client object with an event callback: gets connect, status, chat, and shutter events
-		const client = new Parsec(elementVideo, (event) => {
-			console.log('EVENT', event);
-
-			if (event.type === 'exit') {
-				document.removeEventListener('keydown', hotkeys, true);
-				resolve(event.code);
-			}
-		});
-
-		//set up useful hotkeys that call client methods: destroy can also be used to cancel pending connection
-		const hotkeys = (event) => {
-			event.preventDefault();
-
-			if (event.code === 'Backquote' && event.ctrlKey && event.altKey) {
-				client.destroy(0);
-
-			} else if (event.code === 'KeyW' && event.ctrlKey && event.altKey) {
-				toggleFullscreen(element);
-			}
-		};
-		document.addEventListener('keydown', hotkeys, true);
-
-		client.connect(sessionId, serverId);
-	});
-}
-
-function addRow(table) {
-	const tr = document.createElement('tr');
-	table.appendChild(tr);
-	return tr;
-}
-
-function addTextCol(tr, text) {
-	const td = document.createElement('td');
-	td.textContent = text;
-	tr.appendChild(td);
-}
-
-function addButtonCol(tr, text, onclick) {
-	const td = document.createElement('td');
-	tr.appendChild(td);
-
-	const button = document.createElement('button');
-	button.textContent = text;
-	button.onclick = onclick;
-	td.appendChild(button);
-}
+/*** UI & PARSEC CLIENT ***/
 
 async function serverTable(sessionId) {
-
 	const json = await serverList(sessionId);
 	const table = _('#server-list');
 
@@ -116,21 +43,32 @@ async function serverTable(sessionId) {
 		addTextCol(tr, server.user_name);
 		addButtonCol(tr, 'Connect', async () => {
 			const container = _('.video-container');
-			const elementVideo = _('video');
-
-			table.style.display = 'none';
 			container.style.display = 'block';
+			table.style.display = 'none';
 
-			const code = await runClient(elementVideo, sessionId, server.peer_id);
+			// Parsec instance and client connection
+			const parsec = new Parsec(_('video'), _('audio'), container);
+			parsec.handleInput(parsec.Input.All);
 
-			table.style.display = '';
-			container.style.display = '';
+			parsec.clientConnect(sessionId, server.peer_id, '');
 
-			element.src = '';
-			element.load();
+			// Client status polling interval
+			const interval = setInterval(() => {
+				const status = parsec.clientGetStatus();
 
-			if (code !== 0)
-				alert(`Exit code: ${code}`);
+				if (status != parsec.Status.PARSEC_CONNECTING && status != parsec.Status.PARSEC_OK) {
+					parsec.clientDisconnect();
+					parsec.destroy();
+
+					table.style.display = 'table';
+					container.style.display = '';
+
+					if (status !== 0)
+						alert(`Exit code: ${status}`);
+
+					clearInterval(interval);
+				}
+			}, 100);
 		});
 	}
 
@@ -160,7 +98,33 @@ async function submit() {
 	}
 }
 
-export function ui() {
+function _(selector) {
+	return document.querySelector(selector);
+}
+
+function addRow(table) {
+	const tr = document.createElement('tr');
+	table.appendChild(tr);
+	return tr;
+}
+
+function addTextCol(tr, text) {
+	const td = document.createElement('td');
+	td.textContent = text;
+	tr.appendChild(td);
+}
+
+function addButtonCol(tr, text, onclick) {
+	const td = document.createElement('td');
+	tr.appendChild(td);
+
+	const button = document.createElement('button');
+	button.textContent = text;
+	button.onclick = onclick;
+	td.appendChild(button);
+}
+
+function UI() {
 	_('#email').onkeyup = _('#password').onkeyup = _('#tfa').onkeyup = (event) => {
 		if (event.keyCode === 13) submit();
 	};

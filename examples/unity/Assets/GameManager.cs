@@ -73,7 +73,7 @@ public class GameManager : MonoBehaviour
     public void GetAccessCode()
     {
         //Replace the Game ID with your own.
-        ParsecUnity.API.SessionData sessionData = streamer.RequestCodeAndPoll("1QA1vfr0Lm0SQD5QrEsP9JJFduY");
+        ParsecUnity.API.SessionData sessionData = streamer.RequestCodeAndPoll();
         if ((sessionData != null) && (sessionData.data != null))
         {
             VerificationUri.text = sessionData.data.verification_uri;

@@ -1,5 +1,5 @@
 ## Parsec Unity SDK
-The Parsec Unity SDK uses shared objects from [sdk/windows](../windows) and [sdk/macos](../macos). The macOS `libparsec.dylib` is renamed to `parsec.bundle`. They are copied into this directory for convenience.
+The Parsec Unity SDK uses shared objects from [sdk/windows](../windows) and [sdk/macos](../macos). The macOS `libparsec.dylib` is renamed to `parsec.bundle`. To copy them run `runmefirst.bat` or `runmefirst.sh`.
 
 See [examples/unity](/examples/unity) for a walkthrough and detailed example.
 
@@ -8,7 +8,7 @@ See [examples/unity](/examples/unity) for a walkthrough and detailed example.
 ### ParsecStreamer Class
 | Function | Description |
 |----------|-------------|
-| `SessionData RequestCodeAndPoll(string gameId)` | Request an oauth token for polling |
+| `SessionData RequestCodeAndPoll()` | Request an oauth token for polling |
 | `onUserAuthenticated<SessionResultDataData, SessionResultEnum>` | Event called when there is an update regarding the access token |
 | `GuestConnected(object, ParsecGuest)` | Event called when there's a guest connecting |
 | `GuestDisconnected(object, ParsecGuest)` | Event called when a guest disconnected |
