@@ -23,12 +23,16 @@
 /*** DEFINITIONS ***/
 
 #define GUEST_NAME_LEN   32  ///< (32) Maximum length of a guest's name. Used in ::ParsecGuest.
+#define EXTERNAL_ID_LEN  64  ///< (64) Maximum length of a guest's external ID. Used in ::ParsecGuest.
 #define HOST_NAME_LEN    256 ///< (256) Maximum length  of a host's name. Used in ::ParsecHostConfig.
 #define HOST_DESC_LEN    512 ///< (512) Maximum length of a game's description. Used in ::ParsecHostConfig.
 #define HOST_SECRET_LEN  32  ///< (32) Maximum length of a host's secret code to grant temporary access. Used in ::ParsecHostConfig and ::ParsecClientConfig.
+#define OUTPUT_ID_LEN    64  ///< (64) Maximum length of a host output identifier.
+#define OUTPUT_NAME_LEN  256 ///< (256) Maximum length of an output's name in ::ParsecOutput.
+#define ADAPTER_NAME_LEN 256 ///< (256) Maximum length of an adapter's name in ::ParsecOutput.
 #define GAME_ID_LEN      72  ///< (72) Maximum length of a Game ID. Used in ::ParsecHostConfig.
 
-#define PARSEC_VER_MAJOR 3   ///< (3) Parsec SDK breaking API/ABI change.
+#define PARSEC_VER_MAJOR 4   ///< (4) Parsec SDK breaking API/ABI change.
 #define PARSEC_VER_MINOR 0   ///< (0) Parsec SDK internal implementation detail or additional functionality.
 
 /// @brief 32-bit concatenated major/minor version.
@@ -43,21 +47,23 @@
 }
 
 /// @brief Default host configuration passed to ::ParsecHostStart and ::ParsecHostSetConfig.
-#define PARSEC_HOST_DEFAULTS {     \
-	/*resolutionX       */  0,     \
-	/*resolutionY       */  0,     \
-	/*refreshRate       */  60,    \
-	/*adminMute         */  1,     \
-	/*exclusiveInput    */  0,     \
-	/*encoderFPS        */  0,     \
-	/*encoderMaxBitrate */  10,    \
-	/*encoderH265       */  0,     \
-	/*maxGuests         */  20,    \
-	/*name              */  "",    \
-	/*desc              */  "",    \
-	/*gameID            */  "",    \
-	/*secret            */  "",    \
-	/*publicGame        */  false, \
+#define PARSEC_HOST_DEFAULTS {                \
+	/*gamepadType       */ GAMEPAD_TYPE_X360, \
+	/*resolutionX       */ 0,                 \
+	/*resolutionY       */ 0,                 \
+	/*refreshRate       */ 60,                \
+	/*adminMute         */ 1,                 \
+	/*exclusiveInput    */ 0,                 \
+	/*encoderFPS        */ 0,                 \
+	/*encoderMaxBitrate */ 10,                \
+	/*encoderH265       */ 0,                 \
+	/*maxGuests         */ 20,                \
+	/*name              */ "",                \
+	/*desc              */ "",                \
+	/*gameID            */ "",                \
+	/*secret            */ "",                \
+	/*output            */ "none",            \
+	/*publicGame        */ false,             \
 }
 
 /// @brief Default client configuration passed to ::ParsecClientConnect.
@@ -550,6 +556,14 @@ typedef enum ParsecHostMode {
 	__HOST_MAKE_32 = 0x7FFFFFFF,
 } ParsecHostMode;
 
+/// @brief Virtual gamepad type.
+/// @details Member of ::ParsecHostConfig.
+typedef enum ParsecGamepadType {
+	GAMEPAD_TYPE_X360      = 1, ///< Xbox 360 gamepad.
+	GAMEPAD_TYPE_DS4       = 2, ///< Playstation DualShock 4 gamepad.
+	__GAMEPAD_TYPE_MAKE_32 = 0x7FFFFFFF,
+} ParsecGamepadType;
+
 /// @brief Host event type.
 /// @details Member of ::ParsecHostEvent.
 typedef enum ParsecHostEventType {
@@ -594,6 +608,14 @@ typedef struct ParsecFrame {
 	uint32_t fullHeight;      ///< Actual height of the frame including padding.
 } ParsecFrame;
 
+/// @brief Output (monitor) properties.
+/// @details The `id` member can be set in ::ParsecHostConfig to switch outputs in ::HOST_DESKTOP mode.
+typedef struct ParsecOutput {
+	char name[OUTPUT_NAME_LEN];         ///< UTF-8 null-terminated output name, usually the name of a monitor.
+	char adapterName[ADAPTER_NAME_LEN]; ///< UTF-8 null-terminated adapter name that the output is attached to.
+	char id[OUTPUT_ID_LEN];             ///< ASCII null-terminated output identifier used in ::ParsecHostConfig.
+} ParsecOutput;
+
 /// @brief Cursor properties.
 /// @details Member of ::ParsecClientCursorEvent, which is itself a member of ::ParsecClientEvent,
 ///     returned by ::ParsecClientPollEvents. Also passed to ::ParsecHostSubmitCursor to update the cursor while
@@ -618,29 +640,34 @@ typedef struct ParsecCursor {
 typedef struct ParsecPermissions {
 	bool gamepad;  ///< The guest can send gamepad input.
 	bool keyboard; ///< The guest can send keyboard input.
-	bool mouse;    ///< The guest can send mouse button.
+	bool mouse;    ///< The guest can send mouse input.
 	uint8_t __pad[1];
 } ParsecPermissions;
 
 /// @brief Latency performance metrics.
 /// @details Member of ::ParsecGuest and ::ParsecClientStatus.
 typedef struct ParsecMetrics {
+	uint32_t packetsSent; ///< The number of video packets sent since the connection was established.
+	uint32_t fastRTs;     ///< The number of video fast retransmission packets since the connection was established. Fast retransmissions may indicate packet loss.
+	uint32_t slowRTs;     ///< The number of video slow retransmission packets since the connection was established. Slow retransmissions most likely indicate packet loss.
 	float encodeLatency;  ///< Average time in milliseconds for the host to encode a frame.
 	float decodeLatency;  ///< Average time in milliseconds for the client to decode a frame.
 	float networkLatency; ///< Average round trip time between the client and host.
+	float bitrate;        ///< Averate Mbps sent/received over the video stream. This number is calculated every 60 frames.
 } ParsecMetrics;
 
 /// @brief Guest properties.
 /// @details Member of ::ParsecGuestStateChangeEvent and ::ParsecUserDataEvent. Returned by ::ParsecHostGetGuests
 ///     and ::ParsecHostPollInput.
 typedef struct ParsecGuest {
-	ParsecPermissions perms;        ///< Guest input permissions. ::HOST_DESKTOP only.
-	ParsecMetrics metrics;          ///< Latency performance metrics, only valid in state ::GUEST_CONNECTED.
-	ParsecGuestState state;         ///< Guest connection lifecycle states.
-	uint32_t id;                    ///< Guest ID passed to various host functions.
-	uint32_t userID;                ///< Parsec unique user ID.
-	char name[GUEST_NAME_LEN];      ///< UTF-8 null-terminated name guest name string.
-	bool owner;                     ///< The guest is also the owner of the host computer. ::HOST_DESKTOP only.
+	ParsecPermissions perms;          ///< Guest input permissions. ::HOST_DESKTOP only.
+	ParsecMetrics metrics;            ///< Latency performance metrics, only valid in state ::GUEST_CONNECTED.
+	ParsecGuestState state;           ///< Guest connection lifecycle states.
+	uint32_t id;                      ///< Guest ID passed to various host functions.
+	uint32_t userID;                  ///< Parsec unique user ID.
+	char name[GUEST_NAME_LEN];        ///< UTF-8 null-terminated name guest name string.
+	char externalID[EXTERNAL_ID_LEN]; ///< UTF-8 null-terminated enterprise external ID, will be empty for non-enterprise usage.
+	bool owner;                       ///< The guest is also the owner of the host computer. ::HOST_DESKTOP only.
 	uint8_t __pad[3];
 } ParsecGuest;
 
@@ -759,9 +786,10 @@ typedef struct ParsecClientConfig {
 /// @details Returned by ::ParsecClientGetStatus.
 typedef struct ParsecClientStatus {
 	ParsecMetrics metrics;          ///< Latency performance metrics.
+	uint32_t id;                    ///< Guest ID for the current client connection. Useful for matching the current client connection to a ::ParsecGuest returned from ::ParsecClientGetGuests.
 	bool networkFailure;            ///< Client is currently experiencing network failure.
 	bool decoderFallback;           ///< `true` if the client had to fallback to software decoding after being unable to internally initialize a hardware accelerated decoder.
-	uint8_t __pad[1];
+	uint8_t __pad[2];
 } ParsecClientStatus;
 
 /// @brief Cursor mode/image update event.
@@ -802,20 +830,22 @@ typedef struct ParsecClientEvent {
 /// @brief Host configuration.
 /// @details Member of ::ParsecHostStatus, passed to ::ParsecHostStart and ::ParsecHostSetConfig.
 typedef struct ParsecHostConfig {
-	int32_t resolutionX;          ///< Resolution width. ::HOST_DESKTOP owner only.
-	int32_t resolutionY;          ///< Resolution height. ::HOST_DESKTOP owner only.
-	int32_t refreshRate;          ///< Refresh rate in Hz. ::HOST_DESKTOP owner only.
-	int32_t adminMute;            ///< Mute local audio on owner connection. ::HOST_DESKTOP owner only.
-	int32_t exclusiveInput;       ///< Block remote input when local host input occurs. ::HOST_DESKTOP only.
-	int32_t encoderFPS;           ///< Desired frames per second.
-	int32_t encoderMaxBitrate;    ///< Maximum output bitrate in Mbps, split between guests.
-	int32_t encoderH265;          ///< Allow H.265 codec.
-	int32_t maxGuests;            ///< Total number of guests allowed at once. This number should not include the local host.
-	char name[HOST_NAME_LEN];     ///< UTF-8 null-terminated name string. May be zeroed to use hostname.
-	char desc[HOST_DESC_LEN];     ///< UTF-8 null-terminated description string. ::HOST_GAME only.
-	char gameID[GAME_ID_LEN];     ///< Game unique identifier issued by Parsec. ::HOST_GAME only.
-	char secret[HOST_SECRET_LEN]; ///< ASCII null-terminated secret code that can be distributed to guests to allow temporary access. Minimum 8 characters.
-	bool publicGame;              ///< Set to `true` to allow the hosting session to be visible publicly in the Parsec Arcade. ::HOST_GAME only.
+	ParsecGamepadType gamepadType;  ///< Virtual gamepad type for connected guests. ::HOST_DESKTOP only.
+	int32_t resolutionX;            ///< Resolution width. ::HOST_DESKTOP owner only.
+	int32_t resolutionY;            ///< Resolution height. ::HOST_DESKTOP owner only.
+	int32_t refreshRate;            ///< Refresh rate in Hz. ::HOST_DESKTOP owner only.
+	int32_t adminMute;              ///< Mute local audio on owner connection. ::HOST_DESKTOP owner only.
+	int32_t exclusiveInput;         ///< Block remote input when local host input occurs. ::HOST_DESKTOP only.
+	int32_t encoderFPS;             ///< Desired frames per second.
+	int32_t encoderMaxBitrate;      ///< Maximum output bitrate in Mbps, split between guests.
+	int32_t encoderH265;            ///< Allow H.265 codec.
+	int32_t maxGuests;              ///< Total number of guests allowed at once. This number should not include the local host.
+	char name[HOST_NAME_LEN];       ///< UTF-8 null-terminated name string. May be zeroed to use hostname.
+	char desc[HOST_DESC_LEN];       ///< UTF-8 null-terminated description string. ::HOST_GAME only.
+	char gameID[GAME_ID_LEN];       ///< ASCII null-terminated game unique identifier issued by Parsec. ::HOST_GAME only.
+	char secret[HOST_SECRET_LEN];   ///< ASCII null-terminated secret code that can be distributed to guests to allow temporary access. Minimum 8 characters.
+	char output[OUTPUT_ID_LEN];     ///< ASCII null-terminated output identifier acquired via ::ParsecGetOutputs. ::HOST_DESKTOP only;
+	bool publicGame;                ///< Set to `true` to allow the hosting session to be visible publicly in the Parsec Arcade. ::HOST_GAME only.
 	uint8_t __pad[3];
 } ParsecHostConfig;
 
@@ -833,7 +863,8 @@ typedef struct ParsecHostStatus {
 /// @brief Guest connection state change event.
 /// @details Member of ::ParsecHostEvent.
 typedef struct ParsecGuestStateChangeEvent {
-	ParsecGuest guest; ///< Guest properties. The `state` member can be used to evaluate the guest's state change.
+	ParsecGuest guest;    ///< Guest properties. The `state` member can be used to evaluate the guest's state change.
+	ParsecStatus status;  ///< The ::ParsecStatus of the guest during the state change.
 } ParsecGuestStateChangeEvent;
 
 /// @brief User-defined guest message event.
@@ -899,7 +930,7 @@ typedef void ParsecD3D11Texture2D;
 /// @param level ::ParsecLogLevel level value.
 /// @param msg Null-terminated UTF-8 string containing the full log message.
 /// @param opaque User supplied context passed to ::ParsecSetLogCallback.
-typedef void (*ParsecLogCallback)(ParsecLogLevel level, char *msg, void *opaque);
+typedef void (*ParsecLogCallback)(ParsecLogLevel level, const char *msg, void *opaque);
 
 /// @brief Fired synchronously if a new host video frame is available.
 /// @details Passed to ::ParsecClientPollFrame. IMPORTANT: Parsec SDK functions may not be called
@@ -907,7 +938,7 @@ typedef void (*ParsecLogCallback)(ParsecLogLevel level, char *msg, void *opaque)
 /// @param frame Video frame properties.
 /// @param image The video frame buffer containing image data.
 /// @param opaque User supplied context passed to ::ParsecClientPollFrame.
-typedef void (*ParsecFrameCallback)(ParsecFrame *frame, uint8_t *image, void *opaque);
+typedef void (*ParsecFrameCallback)(const ParsecFrame *frame, const void *image, void *opaque);
 
 /// @brief Fired synchronously just before a new host video frame is rendered.
 /// @details Passed to the `ClientRenderFrame` family of functions, i.e. ::ParsecClientGLRenderFrame.
@@ -924,7 +955,7 @@ typedef bool (*ParsecPreRenderCallback)(void *opaque);
 /// @param pcm 16-bit signed, two channel, 48KHz PCM audio samples.
 /// @param frames Number of audio frames.
 /// @param opaque User supplied context passed to ::ParsecClientPollAudio.
-typedef void (*ParsecAudioCallback)(int16_t *pcm, uint32_t frames, void *opaque);
+typedef void (*ParsecAudioCallback)(const int16_t *pcm, uint32_t frames, void *opaque);
 
 
 /*** INSTANCE FUNCTIONS ***/
@@ -937,9 +968,11 @@ typedef void (*ParsecAudioCallback)(int16_t *pcm, uint32_t frames, void *opaque)
 #define ParsecFree                      (*ParsecFree)
 #define ParsecSetLogCallback            (*ParsecSetLogCallback)
 #define ParsecVersion                   (*ParsecVersion)
+#define ParsecGetOutputs                (*ParsecGetOutputs)
 #define ParsecClientConnect             (*ParsecClientConnect)
 #define ParsecClientDisconnect          (*ParsecClientDisconnect)
 #define ParsecClientGetStatus           (*ParsecClientGetStatus)
+#define ParsecClientGetGuests           (*ParsecClientGetGuests)
 #define ParsecClientSetDimensions       (*ParsecClientSetDimensions)
 #define ParsecClientPollFrame           (*ParsecClientPollFrame)
 #define ParsecClientPollAudio           (*ParsecClientPollAudio)
@@ -981,7 +1014,7 @@ typedef struct ParsecAPI {
 /// @returns ::PARSEC_ERR_VERSION if this header is incompatible with the linked Parsec SDK binary,
 ///     otherwise ::PARSEC_OK.
 EXPORT ParsecStatus
-ParsecInit(uint32_t ver, ParsecConfig *cfg, void *reserved, Parsec **ps);
+ParsecInit(uint32_t ver, const ParsecConfig *cfg, const void *reserved, Parsec **ps);
 
 /// @brief Destroy ::Parsec instance.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1018,13 +1051,20 @@ ParsecFree(void *ptr);
 /// @param[in] callback Fired when a new log message is available from the Parsec SDK.
 /// @param[in] opaque User supplied context to be passed through `callback`.
 EXPORT void
-ParsecSetLogCallback(ParsecLogCallback callback, void *opaque);
+ParsecSetLogCallback(ParsecLogCallback callback, const void *opaque);
 
 /// @brief Retrieve the Parsec SDK internal ::PARSEC_VER.
 /// @details This is useful when loading the Parsec SDK at runtime to prevent major version
 ///     incompatibility. ::PARSEC_VER_MAJOR is the upper 16 bits, ::PARSEC_VER_MINOR is the lower 16 bits.
 EXPORT uint32_t
 ParsecVersion(void);
+
+/// @brief Get a list of currently available outputs. Windows only.
+/// @details The return value `outputs` is dynamically allocated and must be passed to ::ParsecFree after use.
+/// @param[out] outputs Pointer to an array of outputs.
+/// @returns The length of the array returned in `outputs`.
+EXPORT uint32_t
+ParsecGetOutputs(ParsecOutput **outputs);
 
 
 /*** CLIENT FUNCTIONS ***/
@@ -1038,7 +1078,7 @@ ParsecVersion(void);
 /// @param[in] peerID Remote host Peer ID obtained via the [Parsec API](https://github.com/parsec-cloud/parsec-sdk/tree/master/api/public).
 /// @returns ::PARSEC_OK if the connection attempt is underway, ::PARSEC_ALREADY_RUNNING if there is an active connection.
 EXPORT ParsecStatus
-ParsecClientConnect(Parsec *ps, ParsecClientConfig *cfg, char *sessionID, char *peerID);
+ParsecClientConnect(Parsec *ps, const ParsecClientConfig *cfg, const char *sessionID, const char *peerID);
 
 /// @brief Disconnect client.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1056,6 +1096,14 @@ ParsecClientDisconnect(Parsec *ps);
 ///     in an error state.
 EXPORT ParsecStatus
 ParsecClientGetStatus(Parsec *ps, ParsecClientStatus *status);
+
+/// @brief Get a list of all guests currently connected to the host.
+/// @details The return value `guests` is dynamically allocated and must be passed to ::ParsecFree after use.
+/// @param[in] ps ::Parsec instance returned by ::ParsecInit.
+/// @param[out] guests Pointer to an array of guests. May be `NULL` to query the number of guests but not set the array.
+/// @returns The length of the array returned in `guests`.
+EXPORT uint32_t
+ParsecClientGetGuests(Parsec *ps, ParsecGuest **guests);
 
 /// @brief Set client window dimensions and screen scale.
 /// @details The window size and screen scale are used internally to translate mouse coordinates
@@ -1076,7 +1124,7 @@ ParsecClientSetDimensions(Parsec *ps, uint32_t width, uint32_t height, float sca
 /// @returns ::PARSEC_OK if a new frame was available and the callback fired, otherwise
 ///     a ::ParsecStatus warning value on timeout.
 EXPORT ParsecStatus
-ParsecClientPollFrame(Parsec *ps, ParsecFrameCallback callback, uint32_t timeout, void *opaque);
+ParsecClientPollFrame(Parsec *ps, ParsecFrameCallback callback, uint32_t timeout, const void *opaque);
 
 /// @brief Poll for new audio from the host.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1086,7 +1134,7 @@ ParsecClientPollFrame(Parsec *ps, ParsecFrameCallback callback, uint32_t timeout
 /// @returns ::PARSEC_OK if new audio frames were available and the callback fired, otherwise
 ///     a ::ParsecStatus warning value on timeout.
 EXPORT ParsecStatus
-ParsecClientPollAudio(Parsec *ps, ParsecAudioCallback callback, uint32_t timeout, void *opaque);
+ParsecClientPollAudio(Parsec *ps, ParsecAudioCallback callback, uint32_t timeout, const void *opaque);
 
 /// @brief Poll client events.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1106,7 +1154,7 @@ ParsecClientPollEvents(Parsec *ps, uint32_t timeout, ParsecClientEvent *event);
 /// @param[in] timeout Time in milliseconds to wait for a new frame or render the previous frame and return.
 /// @returns ::PARSEC_OK if a frame was rendered successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
-ParsecClientGLRenderFrame(Parsec *ps, ParsecPreRenderCallback pre, void *opaque, uint32_t timeout);
+ParsecClientGLRenderFrame(Parsec *ps, ParsecPreRenderCallback pre, const void *opaque, uint32_t timeout);
 
 /// @brief Renders a remote video frame with Metal.
 /// @details If the timeout expires, the previous frame is rendered.
@@ -1120,7 +1168,7 @@ ParsecClientGLRenderFrame(Parsec *ps, ParsecPreRenderCallback pre, void *opaque,
 /// @returns ::PARSEC_OK if a frame was rendered successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
 ParsecClientMetalRenderFrame(Parsec *ps, ParsecMetalCommandQueue *cq, ParsecMetalTexture **target,
-	ParsecPreRenderCallback pre, void *opaque, uint32_t timeout);
+	ParsecPreRenderCallback pre, const void *opaque, uint32_t timeout);
 
 /// @brief Renders a remote video frame with D3D9.
 /// @details If the timeout expires, the previous frame is rendered.
@@ -1132,7 +1180,7 @@ ParsecClientMetalRenderFrame(Parsec *ps, ParsecMetalCommandQueue *cq, ParsecMeta
 /// @returns ::PARSEC_OK if a frame was rendered successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
 ParsecClientD3D9RenderFrame(Parsec *ps, ParsecD3D9Device *device, ParsecPreRenderCallback pre,
-	void *opaque, uint32_t timeout);
+	const void *opaque, uint32_t timeout);
 
 /// @brief Renders a remote video frame with D3D11.
 /// @details If the timeout expires, the previous frame is rendered.
@@ -1145,7 +1193,7 @@ ParsecClientD3D9RenderFrame(Parsec *ps, ParsecD3D9Device *device, ParsecPreRende
 /// @returns ::PARSEC_OK if a frame was rendered successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
 ParsecClientD3D11RenderFrame(Parsec *ps, ParsecD3D11Device *device, ParsecD3D11DeviceContext *context,
-	ParsecPreRenderCallback pre, void *opaque, uint32_t timeout);
+	ParsecPreRenderCallback pre, const void *opaque, uint32_t timeout);
 
 /// @brief Cleanup internal OpenGL/GLES state.
 /// @details Must be called from a thread with a current OpenGL/GLES 2.0 compatible context.
@@ -1161,7 +1209,7 @@ ParsecClientGLDestroy(Parsec *ps);
 /// @param[in] msg Generic input message than can represet any message type.
 /// @returns ::PARSEC_OK if the message was sent successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
-ParsecClientSendMessage(Parsec *ps, ParsecMessage *msg);
+ParsecClientSendMessage(Parsec *ps, const ParsecMessage *msg);
 
 /// @brief Pause video and/or audio output from the host.
 /// @details Useful if your application enters a background state or temporarily wants to save
@@ -1183,7 +1231,7 @@ ParsecClientPause(Parsec *ps, bool pauseVideo, bool pauseAudio);
 /// @param[in] text Null-terminated UTF-8 string.
 /// @returns ::PARSEC_OK if the message was sent successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
-ParsecClientSendUserData(Parsec *ps, uint32_t id, char *text);
+ParsecClientSendUserData(Parsec *ps, uint32_t id, const char *text);
 
 
 /*** HOST FUNCTIONS ***/
@@ -1201,7 +1249,7 @@ ParsecClientSendUserData(Parsec *ps, uint32_t id, char *text);
 /// @param[in] sessionID Session ID obtained via the [Parsec API](https://github.com/parsec-cloud/parsec-sdk/tree/master/api/public).
 /// @returns Always ::PARSEC_OK on Windows, otherwise ::PARSEC_OK in ::HOST_GAME or ::PARSEC_NOT_IMPLEMENTED.
 EXPORT ParsecStatus
-ParsecHostStart(Parsec *ps, ParsecHostMode mode, ParsecHostConfig *cfg, char *sessionID);
+ParsecHostStart(Parsec *ps, ParsecHostMode mode, const ParsecHostConfig *cfg, const char *sessionID);
 
 /// @brief Disconnect all guests and stop hosting.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1222,7 +1270,7 @@ ParsecHostGetStatus(Parsec *ps, ParsecHostStatus *status);
 ///     May be `NULL` to continue to use the previously set Session ID.
 /// @returns ::PARSEC_OK on success or ::PARSEC_NOT_RUNNING if the host has not been started.
 EXPORT ParsecStatus
-ParsecHostSetConfig(Parsec *ps, ParsecHostConfig *cfg, char *sessionID);
+ParsecHostSetConfig(Parsec *ps, const ParsecHostConfig *cfg, const char *sessionID);
 
 /// @brief Get a list of all connected and/or waiting guests.
 /// @details The return value `guests` is dynamically allocated and must be passed to ::ParsecFree after use.
@@ -1247,7 +1295,7 @@ ParsecHostKickGuest(Parsec *ps, uint32_t guestID);
 /// @param[in] text Null-terminated UTF-8 string.
 /// @returns ::PARSEC_OK if the message was successfully sent, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
-ParsecHostSendUserData(Parsec *ps, uint32_t guestID, uint32_t id, char *text);
+ParsecHostSendUserData(Parsec *ps, uint32_t guestID, uint32_t id, const char *text);
 
 /// @brief Poll host events.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1273,7 +1321,7 @@ ParsecHostAllowGuest(Parsec *ps, uint32_t guestID, bool allow);
 /// @param[in] perms Guest input permissions.
 /// @returns ::PARSEC_OK if permissions were set successfully, otherwise a ::ParsecStatus error value.
 EXPORT ParsecStatus
-ParsecHostSetPermissions(Parsec *ps, uint32_t guestID, ParsecPermissions *perms);
+ParsecHostSetPermissions(Parsec *ps, uint32_t guestID, const ParsecPermissions *perms);
 
 /// @brief Poll input messages from connected guests. ::HOST_GAME only.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1294,7 +1342,7 @@ ParsecHostPollInput(Parsec *ps, uint32_t timeout, ParsecGuest *guest, ParsecMess
 /// @param[in] frames The number of audio frames contained in `pcm`.
 /// @returns ::PARSEC_OK on success or ::PARSEC_NOT_RUNNING if the host has not been started.
 EXPORT ParsecStatus
-ParsecHostSubmitAudio(Parsec *ps, ParsecPCMFormat format, uint32_t sampleRate, uint8_t *pcm, uint32_t frames);
+ParsecHostSubmitAudio(Parsec *ps, ParsecPCMFormat format, uint32_t sampleRate, const void *pcm, uint32_t frames);
 
 /// @brief Submit a cursor mode and/or image update to connected guests. ::HOST_GAME only.
 /// @details The cursor image buffer must be in 32-bit RGBA with no padding or bitmap header.
@@ -1303,7 +1351,7 @@ ParsecHostSubmitAudio(Parsec *ps, ParsecPCMFormat format, uint32_t sampleRate, u
 /// @param[in] image 32-bits per pixel RGBA cursor image buffer.
 /// @returns ::PARSEC_OK on success or ::PARSEC_NOT_RUNNING if the host has not been started.
 EXPORT ParsecStatus
-ParsecHostSubmitCursor(Parsec *ps, ParsecCursor *cursor, uint8_t *image);
+ParsecHostSubmitCursor(Parsec *ps, ParsecCursor *cursor, const void *image);
 
 /// @brief Submit gamepad rumble data to a connected guests. ::HOST_GAME only.
 /// @param[in] ps ::Parsec instance returned by ::ParsecInit.
@@ -1350,9 +1398,11 @@ ParsecHostD3D11SubmitFrame(Parsec *ps, ParsecD3D11Device *device, ParsecD3D11Dev
 #undef ParsecFree
 #undef ParsecSetLogCallback
 #undef ParsecVersion
+#undef ParsecGetOutputs
 #undef ParsecClientConnect
 #undef ParsecClientDisconnect
 #undef ParsecClientGetStatus
+#undef ParsecClientGetGuests
 #undef ParsecClientSetDimensions
 #undef ParsecClientPollFrame
 #undef ParsecClientPollAudio

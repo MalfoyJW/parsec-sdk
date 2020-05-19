@@ -12,6 +12,10 @@
 #define WINDOW_W 1280
 #define WINDOW_H 720
 
+#define CHANNELS          2
+#define SAMPLE_RATE       48000
+#define FRAMES_PER_PACKET 960
+
 #if defined(_WIN32)
 	#include <GL/gl.h>
 	#if !defined(BITS)
@@ -33,27 +37,48 @@
 
 struct context {
 	bool done;
-	float scale;
 	ParsecDSO *parsec;
+
+	// Video
+	float scale;
 	SDL_Window *window;
+	SDL_GLContext *gl;
 	SDL_Surface *surface;
 	SDL_Cursor *cursor;
+
+	// Audio
 	SDL_AudioDeviceID audio;
+	bool playing;
+	uint32_t minBuffer;
+	uint32_t maxBuffer;
 };
 
-static void logCallback(enum ParsecLogLevel level, char *msg, void *opaque)
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
 	opaque;
 
 	printf("[%s] %s\n", level == LOG_DEBUG ? "D" : "I", msg);
 }
 
-static void audio(int16_t *pcm, uint32_t frames, void *opaque)
+static void audio(const int16_t *pcm, uint32_t frames, void *opaque)
 {
 	struct context *context = (struct context *) opaque;
 
-	if (SDL_GetQueuedAudioSize(context->audio) < 20000)
-		SDL_QueueAudio(context->audio, pcm, frames * 2 * sizeof(int16_t));
+	uint32_t size = SDL_GetQueuedAudioSize(context->audio);
+	uint32_t queued_frames = size / (CHANNELS * sizeof(int16_t));
+	uint32_t queued_packets = queued_frames / FRAMES_PER_PACKET;
+
+	if (context->playing && queued_packets > context->maxBuffer) {
+		SDL_ClearQueuedAudio(context->audio);
+		SDL_PauseAudioDevice(context->audio, 1);
+		context->playing = false;
+
+	} else if (!context->playing && queued_packets >= context->minBuffer) {
+		SDL_PauseAudioDevice(context->audio, 0);
+		context->playing = true;
+	}
+
+	SDL_QueueAudio(context->audio, pcm, frames * CHANNELS * sizeof(int16_t));
 }
 
 static void userData(struct context *context, uint32_t id, uint32_t bufferKey)
@@ -112,7 +137,8 @@ static int32_t renderThread(void *opaque)
 {
 	struct context *context = (struct context *) opaque;
 
-	SDL_GLContext *gl = SDL_GL_CreateContext(context->window);
+	SDL_GL_MakeCurrent(context->window, context->gl);
+
 	SDL_GL_SetSwapInterval(1);
 
 	while (!context->done) {
@@ -130,7 +156,7 @@ static int32_t renderThread(void *opaque)
 	}
 
 	ParsecClientGLDestroy(context->parsec);
-	SDL_GL_DeleteContext(gl);
+	SDL_GL_DeleteContext(context->gl);
 
 	return 0;
 }
@@ -147,16 +173,23 @@ int32_t main(int32_t argc, char **argv)
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
 
 	SDL_AudioSpec want = {0}, have;
-	want.freq = 48000;
+	want.freq = SAMPLE_RATE;
 	want.format = AUDIO_S16;
-	want.channels = 2;
+	want.channels = CHANNELS;
 	want.samples = 2048;
 
+	context.minBuffer = 1; // The number of audio packets (960 frames) to buffer before we begin playing
+	context.maxBuffer = 6; // The number of audio packets (960 frames) to buffer before overflow and clear
+
 	context.audio = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-	SDL_PauseAudioDevice(context.audio, 0);
 
 	context.window = SDL_CreateWindow("Parsec Client Demo", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		WINDOW_W, WINDOW_H, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+
+	context.gl = SDL_GL_CreateContext(context.window);
+	#if !defined(__APPLE__)
+		SDL_GL_MakeCurrent(context.window, NULL);
+	#endif
 
 	int32_t glW = 0;
 	SDL_GL_GetDrawableSize(context.window, &glW, NULL);

@@ -72,6 +72,13 @@ clientConnect(sessionID, peerID, secret)
 // See ParsecClientGetStatus. Returns an integer ParsecStatus code.
 clientGetStatus()
 
+// See ParsecClientGetGuests. Returns an a javascript array of ParsecGuests.
+clientGetGuests()
+
+// Returns the current client connection's guestID. Useful for matching your own guestID to the guest list
+// returned from clientGetGuests.
+clientGetGuestID()
+
 // See ParsecClientDisconnect.
 clientDisconnect()
 

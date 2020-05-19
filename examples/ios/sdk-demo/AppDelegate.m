@@ -7,7 +7,7 @@
 
 #include "audio.h"
 
-static void logCallback(enum ParsecLogLevel level, char *msg, void *opaque)
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
     printf("[%s] %s\n", level == LOG_DEBUG ? "D" : "I", msg);
 }

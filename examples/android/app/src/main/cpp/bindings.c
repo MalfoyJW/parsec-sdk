@@ -6,7 +6,7 @@
 
 #include "parsec.h"
 
-static void logCallback(ParsecLogLevel level, char *msg, void *opaque)
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
     __android_log_print(ANDROID_LOG_INFO, "PARSEC", "%s", msg);
 }

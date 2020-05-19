@@ -19,7 +19,7 @@
 	#define SDK_PATH "../../sdk/linux/libparsec.so"
 #endif
 
-static void logCallback(enum ParsecLogLevel level, char *msg, void *opaque)
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
 	opaque;
 

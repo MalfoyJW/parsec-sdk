@@ -19,8 +19,6 @@ res, status_code = hosts(sys.argv[1], 'desktop', False)
 
 print('\n[%d] /v2/hosts/' % status_code)
 
-print(json.dumps(res))
-
 if status_code == 200:
 	print('\n{0:<20} {1}'.format('NAME', 'PEER_ID'))
 	print('{0:<20} {1}'.format('----', '-------'))

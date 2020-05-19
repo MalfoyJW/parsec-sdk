@@ -83,6 +83,7 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 	GETPROC(ctx, ParsecGetConfig);
 	GETPROC(ctx, ParsecGetBuffer);
 	GETPROC(ctx, ParsecFree);
+	GETPROC(ctx, ParsecGetOutputs);
 	GETPROC(ctx, ParsecSetLogCallback);
 	GETPROC(ctx, ParsecClientConnect);
 	GETPROC(ctx, ParsecClientDisconnect);
@@ -102,6 +103,7 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 	GETPROC(ctx, ParsecHostStart);
 	GETPROC(ctx, ParsecHostStop);
 	GETPROC(ctx, ParsecHostGetStatus);
+	GETPROC(ctx, ParsecHostGetGuests);
 	GETPROC(ctx, ParsecHostSetConfig);
 	GETPROC(ctx, ParsecHostGetGuests);
 	GETPROC(ctx, ParsecHostKickGuest);
@@ -134,9 +136,11 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 #define ParsecFree(dso, ...)                    dso->api.ParsecFree(__VA_ARGS__)
 #define ParsecSetLogCallback(dso, ...)          dso->api.ParsecSetLogCallback(__VA_ARGS__)
 #define ParsecVersion(dso, ...)                 dso->api.ParsecVersion(__VA_ARGS__)
+#define ParsecGetOutputs(dso, ...)              dso->api.ParsecGetOutputs(__VA_ARGS__)
 #define ParsecClientConnect(dso, ...)           dso->api.ParsecClientConnect(dso->ps, __VA_ARGS__)
 #define ParsecClientDisconnect(dso)             dso->api.ParsecClientDisconnect(dso->ps)
 #define ParsecClientGetStatus(dso, ...)         dso->api.ParsecClientGetStatus(dso->ps, __VA_ARGS__)
+#define ParsecClientGetGuests(dso, ...)         dso->api.ParsecClientGetGuests(dso->ps, __VA_ARGS__)
 #define ParsecClientSetDimensions(dso, ...)     dso->api.ParsecClientSetDimensions(dso->ps, __VA_ARGS__)
 #define ParsecClientPollFrame(dso, ...)         dso->api.ParsecClientPollFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientPollAudio(dso, ...)         dso->api.ParsecClientPollAudio(dso->ps, __VA_ARGS__)
@@ -144,7 +148,7 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 #define ParsecClientGLRenderFrame(dso, ...)     dso->api.ParsecClientGLRenderFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientMetalRenderFrame(dso, ...)  dso->api.ParsecClientMetalRenderFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientD3D9RenderFrame(dso, ...)   dso->api.ParsecClientD3D9RenderFrame(dso->ps, __VA_ARGS__)
-#define ParsecClientD3D11RenderFrame(dso, ...)  dso->api.ParsecClientD3D11RenderFrame(dos->ps, __VA_ARGS__)
+#define ParsecClientD3D11RenderFrame(dso, ...)  dso->api.ParsecClientD3D11RenderFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientGLDestroy(dso)              dso->api.ParsecClientGLDestroy(dso->ps)
 #define ParsecClientSendMessage(dso, ...)       dso->api.ParsecClientSendMessage(dso->ps, __VA_ARGS__)
 #define ParsecClientPause(dso, ...)             dso->api.ParsecClientPause(dso->ps, __VA_ARGS__)
