@@ -83,11 +83,15 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 	GETPROC(ctx, ParsecGetConfig);
 	GETPROC(ctx, ParsecGetBuffer);
 	GETPROC(ctx, ParsecFree);
-	GETPROC(ctx, ParsecGetOutputs);
 	GETPROC(ctx, ParsecSetLogCallback);
+	GETPROC(ctx, ParsecVersion);
+	GETPROC(ctx, ParsecGetOutputs);
+	GETPROC(ctx, ParsecGetDecoders);
 	GETPROC(ctx, ParsecClientConnect);
 	GETPROC(ctx, ParsecClientDisconnect);
 	GETPROC(ctx, ParsecClientGetStatus);
+	GETPROC(ctx, ParsecClientGetGuests);
+	GETPROC(ctx, ParsecClientSetConfig);
 	GETPROC(ctx, ParsecClientSetDimensions);
 	GETPROC(ctx, ParsecClientPollFrame);
 	GETPROC(ctx, ParsecClientPollAudio);
@@ -99,11 +103,11 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 	GETPROC(ctx, ParsecClientGLDestroy);
 	GETPROC(ctx, ParsecClientSendMessage);
 	GETPROC(ctx, ParsecClientPause);
+	GETPROC(ctx, ParsecClientEnableStream);
 	GETPROC(ctx, ParsecClientSendUserData);
 	GETPROC(ctx, ParsecHostStart);
 	GETPROC(ctx, ParsecHostStop);
 	GETPROC(ctx, ParsecHostGetStatus);
-	GETPROC(ctx, ParsecHostGetGuests);
 	GETPROC(ctx, ParsecHostSetConfig);
 	GETPROC(ctx, ParsecHostGetGuests);
 	GETPROC(ctx, ParsecHostKickGuest);
@@ -137,10 +141,12 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 #define ParsecSetLogCallback(dso, ...)          dso->api.ParsecSetLogCallback(__VA_ARGS__)
 #define ParsecVersion(dso, ...)                 dso->api.ParsecVersion(__VA_ARGS__)
 #define ParsecGetOutputs(dso, ...)              dso->api.ParsecGetOutputs(__VA_ARGS__)
+#define ParsecGetDecoders(dso, ...)             dso->api.ParsecGetDecoders(__VA_ARGS__)
 #define ParsecClientConnect(dso, ...)           dso->api.ParsecClientConnect(dso->ps, __VA_ARGS__)
-#define ParsecClientDisconnect(dso)             dso->api.ParsecClientDisconnect(dso->ps)
+#define ParsecClientDisconnect(dso)             dso->api.ParsecClientDisconnect(dso->ps);
 #define ParsecClientGetStatus(dso, ...)         dso->api.ParsecClientGetStatus(dso->ps, __VA_ARGS__)
 #define ParsecClientGetGuests(dso, ...)         dso->api.ParsecClientGetGuests(dso->ps, __VA_ARGS__)
+#define ParsecClientSetConfig(dso, ...)         dso->api.ParsecClientSetConfig(dso->ps, __VA_ARGS__)
 #define ParsecClientSetDimensions(dso, ...)     dso->api.ParsecClientSetDimensions(dso->ps, __VA_ARGS__)
 #define ParsecClientPollFrame(dso, ...)         dso->api.ParsecClientPollFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientPollAudio(dso, ...)         dso->api.ParsecClientPollAudio(dso->ps, __VA_ARGS__)
@@ -149,12 +155,13 @@ static ParsecStatus ParsecInit(ParsecConfig *cfg, void *reserved, char *path, Pa
 #define ParsecClientMetalRenderFrame(dso, ...)  dso->api.ParsecClientMetalRenderFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientD3D9RenderFrame(dso, ...)   dso->api.ParsecClientD3D9RenderFrame(dso->ps, __VA_ARGS__)
 #define ParsecClientD3D11RenderFrame(dso, ...)  dso->api.ParsecClientD3D11RenderFrame(dso->ps, __VA_ARGS__)
-#define ParsecClientGLDestroy(dso)              dso->api.ParsecClientGLDestroy(dso->ps)
+#define ParsecClientGLDestroy(dso, ...)         dso->api.ParsecClientGLDestroy(dso->ps, __VA_ARGS__)
 #define ParsecClientSendMessage(dso, ...)       dso->api.ParsecClientSendMessage(dso->ps, __VA_ARGS__)
 #define ParsecClientPause(dso, ...)             dso->api.ParsecClientPause(dso->ps, __VA_ARGS__)
+#define ParsecClientEnableStream(dso, ...)      dso->api.ParsecClientEnableStream(dso->ps, __VA_ARGS__)
 #define ParsecClientSendUserData(dso, ...)      dso->api.ParsecClientSendUserData(dso->ps, __VA_ARGS__)
 #define ParsecHostStart(dso, ...)               dso->api.ParsecHostStart(dso->ps, __VA_ARGS__)
-#define ParsecHostStop(dso, ...)                dso->api.ParsecHostStop(dso->ps)
+#define ParsecHostStop(dso)                     dso->api.ParsecHostStop(dso->ps);
 #define ParsecHostGetStatus(dso, ...)           dso->api.ParsecHostGetStatus(dso->ps, __VA_ARGS__)
 #define ParsecHostSetConfig(dso, ...)           dso->api.ParsecHostSetConfig(dso->ps, __VA_ARGS__)
 #define ParsecHostGetGuests(dso, ...)           dso->api.ParsecHostGetGuests(dso->ps, __VA_ARGS__)

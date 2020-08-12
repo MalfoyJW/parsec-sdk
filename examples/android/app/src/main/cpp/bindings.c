@@ -86,7 +86,7 @@ Java_parsec_bindings_Parsec_clientSetDimensions(JNIEnv *env, jobject instance,
     jint x, jint y)
 {
     Parsec *parsec = getPointer(env, instance, "parsec");
-    ParsecClientSetDimensions(parsec, (uint32_t) x, (uint32_t) y, 1.0f);
+    ParsecClientSetDimensions(parsec, 0, (uint32_t) x, (uint32_t) y, 1.0f);
 }
 
 JNIEXPORT jint JNICALL

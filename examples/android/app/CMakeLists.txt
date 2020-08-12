@@ -47,4 +47,4 @@ target_include_directories(parsec-bindings PRIVATE
 # LINK (Seperated by library origin)
 target_link_libraries(
 	parsec-bindings libMain
-	GLESv2 z jnigraphics mediandk aaudio OpenMAXAL log android GLESv2 EGL)
+	GLESv3 z jnigraphics mediandk aaudio OpenMAXAL log android EGL)

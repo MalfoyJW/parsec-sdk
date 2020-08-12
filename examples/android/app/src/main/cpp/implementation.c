@@ -57,7 +57,7 @@ static void *renderVideo(void *opaque)
         EGL_NONE
     };
 
-    EGLint contextConfig[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    EGLint contextConfig[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
 
     EGLDisplay display;
     EGLint majorVersion;
@@ -92,7 +92,7 @@ static void *renderVideo(void *opaque)
         return NULL;
 
     while (ctx->running) {
-        ParsecClientGLRenderFrame(ctx->parsec, preRender, NULL, TIMEOUT);
+        ParsecClientGLRenderFrame(ctx->parsec, 0, preRender, NULL, TIMEOUT);
         eglSwapBuffers(display, surface);
         glFinish();
     }

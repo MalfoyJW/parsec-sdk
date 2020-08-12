@@ -144,18 +144,18 @@ static int32_t renderThread(void *opaque)
 	while (!context->done) {
 		int32_t w = 0, h = 0;
 		SDL_GetWindowSize(context->window, &w, &h);
-		ParsecClientSetDimensions(context->parsec, w, h, context->scale);
+		ParsecClientSetDimensions(context->parsec, DEFAULT_STREAM, w, h, context->scale);
 
 		glViewport(0, 0, w, h);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		ParsecClientGLRenderFrame(context->parsec, NULL, NULL, 100);
+		ParsecClientGLRenderFrame(context->parsec, DEFAULT_STREAM, NULL, NULL, 100);
 		SDL_GL_SwapWindow(context->window);
 		glFinish();
 	}
 
-	ParsecClientGLDestroy(context->parsec);
+	ParsecClientGLDestroy(context->parsec, DEFAULT_STREAM);
 	SDL_GL_DeleteContext(context->gl);
 
 	return 0;
