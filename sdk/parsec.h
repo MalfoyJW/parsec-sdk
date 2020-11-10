@@ -36,7 +36,7 @@
 #define DECODER_NAME_LEN 16  ///< (16) Maximum length of a decoder name. Used in ::ParsecDecoder.
 
 #define PARSEC_VER_MAJOR 5   ///< (5) Parsec SDK breaking API/ABI change.
-#define PARSEC_VER_MINOR 0   ///< (0) Parsec SDK internal implementation detail or additional functionality.
+#define PARSEC_VER_MINOR 1   ///< (1) Parsec SDK internal implementation detail or additional functionality.
 
 /// @brief 32-bit concatenated major/minor version.
 #define PARSEC_VER \
@@ -118,6 +118,12 @@ typedef enum ParsecStatus {
 	WRN_CONTINUE              = 10,      ///< 10
 	PARSEC_CONNECTING         = 20,      ///< 20
 
+	ALINK_WRN_INVALID         = 200,     ///< 200
+	ALINK_WRN_INACTIVE        = 201,     ///< 201
+	ALINK_WRN_EXPIRED         = 202,     ///< 202
+	ALINK_WRN_NOT_STARTED     = 203,     ///< 203
+	ALINK_WRN_TEAM_INVALID    = 204,     ///< 204
+
 	DECODE_WRN_CONTINUE       = 1000,    ///< 1000
 	DECODE_WRN_ACCEPTED       = 1001,    ///< 1001
 	DECODE_WRN_REINIT         = 1003,    ///< 1003
@@ -161,6 +167,7 @@ typedef enum ParsecStatus {
 
 	NAT_ERR_PEER_PHASE        = -6023,   ///< -6023
 	NAT_ERR_STUN_PHASE        = -6024,   ///< -6024
+	NAT_ERR_INTEGRITY         = -6025,   ///< -6025
 	NAT_ERR_NO_CANDIDATES     = -6033,   ///< -6033
 	NAT_ERR_JSON_ACTION       = -6111,   ///< -6111
 	NAT_ERR_NO_SOCKET         = -6112,   ///< -6112
@@ -485,6 +492,7 @@ typedef enum ParsecGamepadState {
 	GAMEPAD_STATE_RIGHT_THUMB    = 0x0080, ///< Right thumbstick button.
 	GAMEPAD_STATE_LEFT_SHOULDER  = 0x0100, ///< Left shoulder (bumper) button.
 	GAMEPAD_STATE_RIGHT_SHOULDER = 0x0200, ///< Right shoulder (bumper) button.
+	GAMEPAD_STATE_GUIDE          = 0x0400, ///< Guide button.
 	GAMEPAD_STATE_A              = 0x1000, ///< A button.
 	GAMEPAD_STATE_B              = 0x2000, ///< B button.
 	GAMEPAD_STATE_X              = 0x4000, ///< X button.
@@ -739,11 +747,12 @@ typedef struct ParsecMouseWheelMessage {
 ///     in accordance with the values set via ::ParsecClientSetDimensions. Relative mode `x` and `y` values are not
 ///     affected by ::ParsecClientSetDimensions and move the cursor with a signed delta value from its previous location.
 typedef struct ParsecMouseMotionMessage {
-	int32_t x;      ///< The absolute horizontal screen coordinate of the cursor  if `relative` is `false`, or the delta (can be negative) if `relative` is `true`.
-	int32_t y;      ///< The absolute vertical screen coordinate of the cursor if `relative` is `false`, or the delta (can be negative) if `relative` is `true`.
-	bool relative;  ///< `true` for relative mode, `false` for absolute mode. See details.
-	uint8_t stream; ///< Video stream index. Must be less than ::NUM_VSTREAMS.
-	uint8_t __pad[2];
+	int32_t x;           ///< The absolute horizontal screen coordinate of the cursor  if `relative` is `false`, or the delta (can be negative) if `relative` is `true`.
+	int32_t y;           ///< The absolute vertical screen coordinate of the cursor if `relative` is `false`, or the delta (can be negative) if `relative` is `true`.
+	bool relative;       ///< `true` for relative mode, `false` for absolute mode. See details.
+	bool scaleRelative;  ///< `true` if relative coordinates should be scaled to the host's dimensions internally.
+	uint8_t stream;      ///< Video stream index. Must be less than ::NUM_VSTREAMS.
+	uint8_t __pad[1];
 } ParsecMouseMotionMessage;
 
 /// @brief Gamepad button message.
@@ -928,8 +937,7 @@ typedef struct ParsecHostStatus {
 	uint32_t numGuests;      ///< The number of guests currently in state ::GUEST_CONNECTED.
 	bool running;            ///< The host is currently accepting guests after calling ::ParsecHostStart.
 	bool invalidSessionID;   ///< `true` if the host's Session ID has become invalid. The host must call ::ParsecHostSetConfig with a valid `sessionID` to continue hosting.
-	bool gamepadSupport;     ///< `true` if the virtual gamepad driver is working properly, otherwise `false`. ::HOST_DESKTOP only.
-	uint8_t __pad[1];
+	uint8_t __pad[2];
 } ParsecHostStatus;
 
 /// @brief Guest connection state change event.
