@@ -3,7 +3,7 @@ import json
 import getpass
 import requests
 
-OLD_HOST = 'https://api.parsecgaming.com/'
+OLD_HOST = 'https://kessel-api.parsecgaming.com/'
 
 def login(email, password, tfa=''):
 	r = requests.post(OLD_HOST + 'v1/auth',
@@ -24,5 +24,5 @@ if status_code == 403 and res.get('tfa_required'):
 
 print('\n[%d] /v1/auth/' % status_code)
 
-if status_code == 200:
+if status_code == 201:
 	print('\nsession_id = %s' % res['session_id'])
