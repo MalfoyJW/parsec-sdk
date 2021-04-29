@@ -35,8 +35,8 @@
 #define DEFAULT_STREAM   0   ///< (0) The default video stream, enabled automatically on client connection to the host.
 #define DECODER_NAME_LEN 16  ///< (16) Maximum length of a decoder name. Used in ::ParsecDecoder.
 
-#define PARSEC_VER_MAJOR 5   ///< (5) Parsec SDK breaking API/ABI change.
-#define PARSEC_VER_MINOR 1   ///< (1) Parsec SDK internal implementation detail or additional functionality.
+#define PARSEC_VER_MAJOR 6   ///< (6) Parsec SDK breaking API/ABI change.
+#define PARSEC_VER_MINOR 0   ///< (0) Parsec SDK internal implementation detail or additional functionality.
 
 /// @brief 32-bit concatenated major/minor version.
 #define PARSEC_VER \
@@ -117,6 +117,7 @@ typedef enum ParsecStatus {
 
 	WRN_CONTINUE              = 10,      ///< 10
 	PARSEC_CONNECTING         = 20,      ///< 20
+	PARSEC_WRN_BROWSER        = 30,      ///< 30
 
 	ALINK_WRN_INVALID         = 200,     ///< 200
 	ALINK_WRN_INACTIVE        = 201,     ///< 201
@@ -153,17 +154,14 @@ typedef enum ParsecStatus {
 	DECODE_ERR_DEPENDENCY     = -22,     ///< -22
 	DECODE_ERR_SYMBOL         = -23,     ///< -23
 
-	WS_ERR_CONNECT            = -6101,   ///< -6101
-	WS_ERR_POLL               = -3001,   ///< -3001
 	WS_ERR_READ               = -3002,   ///< -3002
 	WS_ERR_WRITE              = -3003,   ///< -3003
-	WS_ERR_CLOSE              = -6105,   ///< -6105
-	WS_ERR_INVALID_MSG        = -6106,   ///< -6106
-	WS_ERR_PING               = -3005,   ///< -3005
-	WS_ERR_PONG_TIMEOUT       = -3006,   ///< -3006
-	WS_ERR_PONG               = -3007,   ///< -3007
 	WS_ERR_AUTH               = -3008,   ///< -3008
 	WS_ERR_GOING_AWAY         = -3009,   ///< -3009
+	WS_ERR_TEAM_DEACTIVATED   = -3010,   ///< -3010
+	WS_ERR_CONNECT            = -6101,   ///< -6101
+	WS_ERR_CLOSE              = -6105,   ///< -6105
+	WS_ERR_INVALID_MSG        = -6106,   ///< -6106
 
 	NAT_ERR_PEER_PHASE        = -6023,   ///< -6023
 	NAT_ERR_STUN_PHASE        = -6024,   ///< -6024
@@ -255,13 +253,6 @@ typedef enum ParsecStatus {
 	SCTP_ERR_SOCKET           = -32002,  ///< -32002
 	SCTP_ERR_BIND             = -32003,  ///< -32003
 	SCTP_ERR_CONNECT          = -32004,  ///< -32004
-
-	DTLS_ERR_BIO_WRITE        = -33000,  ///< -33000
-	DTLS_ERR_BIO_READ         = -33001,  ///< -33001
-	DTLS_ERR_SSL              = -33002,  ///< -33002
-	DTLS_ERR_BUFFER           = -33003,  ///< -33003
-	DTLS_ERR_NO_DATA          = -33004,  ///< -33004
-	DTLS_ERR_CERT             = -33005,  ///< -33005
 
 	STUN_ERR_PACKET           = -34000,  ///< -34000
 	STUN_ERR_PARSE_HEADER     = -34001,  ///< -34001
@@ -542,6 +533,17 @@ typedef enum ParsecColorFormat {
 	__FORMAT_MAKE_32 = 0x7FFFFFFF,
 } ParsecColorFormat;
 
+/// @brief Degrees of rotation for raw image data.
+/// @details Member of ::ParsecFrame.
+typedef enum ParsecRotation {
+	ROTATION_UNKNOWN   = 0, ///< Rotation unspecified.
+	ROTATION_NONE      = 1, ///< No rotation.
+	ROTATION_90        = 2, ///< Frame rotation 90 degrees.
+	ROTATION_180       = 3, ///< Frame rotation 180 degrees.
+	ROTATION_270       = 4, ///< Frame rotation 270 degrees.
+	__ROTATION_MAKE_32 = 0x7FFFFFFF,
+} ParsecRotation;
+
 /// @brief Network protocol used for peer-to-peer connections.
 /// @details Member of ::ParsecClientConfig.
 typedef enum ParsecProtocol {
@@ -632,6 +634,7 @@ typedef struct ParsecConfig {
 /// @details Passed through ::ParsecFrameCallback after calling ::ParsecClientPollFrame.
 typedef struct ParsecFrame {
 	ParsecColorFormat format; ///< Color format.
+	ParsecRotation rotation;  ///< Frame rotation.
 	uint32_t size;            ///< Size in bytes of the `image` buffer parameter of ::ParsecFrameCallback.
 	uint32_t width;           ///< Width in pixels of the visible area of the frame.
 	uint32_t height;          ///< Height in pixels of the visible area of the frame.
@@ -673,7 +676,7 @@ typedef struct ParsecCursor {
 	uint16_t height;    ///< Height of the cursor position in pixels.
 	uint16_t hotX;      ///< Horizontal pixel position of the cursor hotspot within the image.
 	uint16_t hotY;      ///< Vertical pixel position of the cursor hotspot within the image.
-	bool modeUpdate;    ///< `true` if the cursor mode should be updated. The `relative`, `positionX`, and `positionY` members are valid.
+	bool hidden;        ///< `true` if the mouse cursor is hidden on the host.
 	bool imageUpdate;   ///< `true` if the cursor image should be updated. The `width`, `height`, `hotX`, `hotY`, and `size` members are valid.
 	bool relative;      ///< `true` if in relative mode, meaning the client should submit mouse motion in relative distances rather than absolute screen coordinates.
 	uint8_t stream;     ///< Video stream index. Must be less than ::NUM_VSTREAMS.

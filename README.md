@@ -20,7 +20,7 @@ The `ParsecClient` portion of the SDK provides everything necessary to make a co
 The Parsec SDK provides the [ParsecUnity](/sdk/ParsecUnity) module for easy integration in Unity games. See [examples/unity](/examples/unity) for details.
 
 #### Windows, macOS, Linux Clients
-The [client](/examples/client) example demonstrates the most complete implementation of the client SDK. It uses the cross platform SDL2 library to handle window creation, rendering, audio playback, and input handling. Windows, macOS, and x86-64 Linux are supported.
+The [client](/examples/client) example demonstrates the most complete implementation of the client SDK. It uses the cross platform [libmatoya](https://github.com/matoya/libmatoya) library to handle window creation, rendering, audio playback, and input handling. Windows, macOS, and x86-64 Linux are supported.
 
 #### iOS and Android Clients
 The [ios](/examples/ios) and [android](/examples/android) examples demonstrate audio playback, rendering, and basic input capabilities of the client SDK. The Android example provides a simple JNI bindings package to expose a subset of the C API in Java.

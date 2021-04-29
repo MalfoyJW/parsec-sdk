@@ -58,7 +58,7 @@ Java_parsec_bindings_Parsec_clientConnect(JNIEnv *env, jobject instance, jstring
     const char *cSessionID = (*env)->GetStringUTFChars(env, sessionID, 0);
     const char *cPeerID = (*env)->GetStringUTFChars(env, peerID, 0);
 
-    ParsecStatus e = ParsecClientConnect(parsec, NULL, (char *) cSessionID, (char *) cPeerID);
+    ParsecStatus e = ParsecClientConnect(parsec, NULL, cSessionID, cPeerID);
 
     (*env)->ReleaseStringUTFChars(env, sessionID, cSessionID);
     (*env)->ReleaseStringUTFChars(env, peerID, cPeerID);

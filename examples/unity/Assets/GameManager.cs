@@ -111,7 +111,7 @@ public class GameManager : MonoBehaviour
     public void StartParsec()
     {
         streamer.StartParsec(m_Players.Length, IsPublicGame.isOn, "Unity Test", "An Example Unity Project", authdata.id);
-        ShortLinkUri.text = streamer.GetInviteUrl(authdata, 600, 10);
+        ShortLinkUri.text = streamer.GetInviteUrl(authdata);
     }
 
     public void StopParsec()

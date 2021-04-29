@@ -5,7 +5,6 @@ const audio = document.querySelector('audio'); // An <audio> element
 const container = document.querySelector('#container'); // Top level wrapper element (optional)
 
 const parsec = new Parsec(video, audio, container);
-parsec.handleInput(parsec.Input.All);
 
 const sessionID = ''; // SessionID acquired via the Parsec API
 const peerID = ''; // PeerID acquired via the Parsec API
@@ -35,19 +34,6 @@ const interval = setInterval(() => {
 
 ```
 
-## Handling Browser Input
-
-By default, without calling `handleInput`, the Parsec Web SDK will not handle any mouse, keyboard, or gamepad input for you. It will also not handle absolute/relative mouse mode transitions or setting the host's cursor image. It is the responsibility of the application to call `clientSendMessage` and `clientPollEvents` to handle host input/output.
-
-To handle certain input/output events automatically, call `handleInput` with a bitwise OR of values from the `Parsec.Input` enumeration:
-
-```js
-Parsec.Input.All       // All input will be handled.
-Parsec.Input.Gamepad   // Gamepad input will be handled and rumble events will no longer be returned by clientPollEvents.
-Parsec.Input.Mouse     // Mouse input will be handled, absolute/relative mode switches will be handled, and cursor events will no longer be returned by clientPollEvents.
-Parsec.Input.Keyboard  // Keyboard input will be handled.
-```
-
 ## Methods
 
 The methods on the `Parsec` class mimic the behavior of the native SDK found in found in [parsec.h](../parsec.h).
@@ -62,10 +48,6 @@ setLogCallback(callback)
 // See ParsecGetBuffer.
 getBuffer(key)
 
-// Instruct the SDK to automatically handle browser input evens and filter certain events from clientPollEvents.
-// A bitwise OR of values found in the `Parsec.Input` enumeration.
-handleInput(input)
-
 // See ParsecClientConnect. All parameters are strings.
 clientConnect(sessionID, peerID, secret)
 
@@ -77,7 +59,7 @@ clientGetGuests()
 
 // Returns the current client connection's guestID. Useful for matching your own guestID to the guest list
 // returned from clientGetGuests.
-clientGetGuestID()
+clientGetSelf()
 
 // See ParsecClientDisconnect.
 clientDisconnect()
@@ -96,15 +78,11 @@ clientGetMetrics()
 
 // See ParsecClientGetStatus. Returns true if the network has encountered an unrecoverable error.
 clientNetworkFailure()
-
-// Instruct the SDK to temporarily enable/disable the sending of browser input events.
-clientBlockInput(block)
 ```
 
 ## Enumerations
 
 ```js
-Parsec.Input  // Values passed to handleInput
 Parsec.Status // Possible return values from clientGetStatus
 ```
 

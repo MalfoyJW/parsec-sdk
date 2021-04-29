@@ -18,6 +18,7 @@ examples/android/captures
 examples/android/app/build
 examples/android/app/libs
 examples/android/app/.externalNativeBuild
+examples/android/app/.cxx
 examples/android/local.properties
 examples/android/.gradle
 examples/android/.idea

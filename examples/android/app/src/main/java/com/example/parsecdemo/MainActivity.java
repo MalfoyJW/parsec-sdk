@@ -17,9 +17,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Set up the screen layout
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
-
         int uiFlag = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LOW_PROFILE
@@ -36,11 +33,12 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         this.parsec = new Parsec();
+
         this.parsec.setLogCallback();
         this.parsec.init();
         this.parsec.appInit();
 
-        parsec.clientConnect("sessionID", "peerID");
+        this.parsec.clientConnect("sessionID", "peerID");
 
         ClientSurface surface = new ClientSurface(this.getApplicationContext());
         surface.setParsec(parsec);

@@ -13,6 +13,7 @@ CFLAGS = \
 	/O2 \
 	/MT \
 	/MP \
+	/wd4201 \
 	-I../../sdk \
 	-Iinclude \
 	-DBITS=$(BITS) \
@@ -35,10 +36,20 @@ SHARED_LIBS = \
 	user32.lib \
 	uuid.lib \
 	version.lib \
-	setupapi.lib
+	setupapi.lib \
+	hid.lib \
+	dxgi.lib \
+	ws2_32.lib \
+	bcrypt.lib \
+	windowscodecs.lib \
+	dxguid.lib \
+	xinput9_1_0.lib \
+	d3d9.lib \
+	shlwapi.lib \
+	d3d11.lib
 
 STATIC_LIBS = \
-	lib/windows/SDL2-$(BITS).lib
+	lib/windows/%Platform%/matoya.lib
 
 LD_FLAGS = \
 	/nodefaultlib \
