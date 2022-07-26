@@ -17,9 +17,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Set up the screen layout
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
-
         int uiFlag = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LOW_PROFILE
@@ -36,25 +33,24 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         this.parsec = new Parsec();
+
         this.parsec.setLogCallback();
         this.parsec.init();
+        this.parsec.appInit();
 
-        int e = parsec.clientConnect("sessionID", "peerID");
+        this.parsec.clientConnect("sessionID", "peerID");
 
-        if (e == parsec.PARSEC_OK) {
-            ClientGLSurface surface = new ClientGLSurface(this.getApplicationContext());
-            surface.setParsec(parsec);
+        ClientSurface surface = new ClientSurface(this.getApplicationContext());
+        surface.setParsec(parsec);
 
-            ViewGroup vg = findViewById(android.R.id.content);
-            ViewGroup.LayoutParams params = vg.getLayoutParams();
-            this.addContentView(surface, params);
-
-            surface.renderInit();
-        }
+        ViewGroup vg = findViewById(android.R.id.content);
+        ViewGroup.LayoutParams params = vg.getLayoutParams();
+        this.addContentView(surface, params);
     }
 
     @Override
-    protected  void onDestroy() {
+    protected void onDestroy() {
+        this.parsec.appDestroy();
         this.parsec.clientDestroy();
         this.parsec.destroy();
 

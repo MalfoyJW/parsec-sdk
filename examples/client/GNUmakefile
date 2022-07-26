@@ -9,6 +9,7 @@ PLATFORM = linux
 SHARED_LIBS = \
 	-lm \
 	-ldl \
+	-lGL \
 	-lpthread
 endif
 
@@ -39,7 +40,7 @@ endif
 ### COMMON ###
 BIN_NAME = client
 OBJS = main.o
-STATIC_LIBS = lib/$(PLATFORM)/libSDL2.a
+STATIC_LIBS = lib/$(PLATFORM)/libmatoya.a
 
 CFLAGS = \
 	-Wall \

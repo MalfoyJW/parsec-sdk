@@ -1,5 +1,6 @@
 #include "aaudio.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include <aaudio/AAudio.h>
@@ -55,7 +56,7 @@ void aaudio_destroy(struct aaudio **ctx_out)
     *ctx_out = NULL;
 }
 
-void aaudio_play(int16_t *pcm, uint32_t frames, void *opaque)
+void aaudio_play(const int16_t *pcm, uint32_t frames, void *opaque)
 {
     struct aaudio *ctx = (struct aaudio *) opaque;
 

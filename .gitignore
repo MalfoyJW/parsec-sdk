@@ -18,6 +18,7 @@ examples/android/captures
 examples/android/app/build
 examples/android/app/libs
 examples/android/app/.externalNativeBuild
+examples/android/app/.cxx
 examples/android/local.properties
 examples/android/.gradle
 examples/android/.idea
@@ -43,4 +44,14 @@ examples/unity/ParsecUnityExample.sln
 examples/unity/.vs/
 examples/unity/obj/
 examples/unity/mcs.rsp
-
+examples/unity/Assets/ParsecUnity/parsec.bundle
+examples/unity/Assets/ParsecUnity/parsec.dll
+examples/unity/Assets/ParsecUnity/parsec32.dll
+examples/unity/Assets/ParsecUnity/ParsecUnity46.dll
+examples/unity-rewired/Assets/ParsecUnity/parsec.bundle
+examples/unity-rewired/Assets/ParsecUnity/parsec.dll
+examples/unity-rewired/Assets/ParsecUnity/parsec32.dll
+examples/unity-rewired/Assets/ParsecUnity/ParsecUnity46.dll
+sdk/ParsecUnity/parsec.bundle
+sdk/ParsecUnity/parsec.dll
+sdk/ParsecUnity/parsec32.dll

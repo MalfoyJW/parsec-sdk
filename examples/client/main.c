@@ -2,18 +2,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "matoya.h"
 #include "parsec-dso.h"
 
-#define SDL_MAIN_HANDLED
-#include "SDL2/SDL.h"
+#include "mtymap.h"
 
-#define MSG_CLIPBOARD 7
-
-#define WINDOW_W 1280
-#define WINDOW_H 720
+#define PARSEC_APP_CLIPBOARD_MSG 7
 
 #if defined(_WIN32)
-	#define SDK_PATH "../../sdk/windows/parsec.dll"
+	#if !defined(BITS)
+		#define BITS 64
+	#endif
+	#if (BITS == 64)
+		#define SDK_PATH "../../sdk/windows/parsec.dll"
+	#else
+		#define SDK_PATH "../../sdk/windows/parsec32.dll"
+	#endif
 #elif defined(__APPLE__)
 	#define SDK_PATH "../../sdk/macos/libparsec.dylib"
 #else
@@ -22,243 +26,191 @@
 
 struct context {
 	bool done;
+	MTY_App *app;
+	MTY_Audio *audio;
 	ParsecDSO *parsec;
-	SDL_Window *window;
-	SDL_Surface *surface;
-	SDL_Cursor *cursor;
-	SDL_AudioDeviceID audio;
 };
 
-static void logCallback(enum ParsecLogLevel level, char *msg, void *opaque)
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
 	opaque;
 
 	printf("[%s] %s\n", level == LOG_DEBUG ? "D" : "I", msg);
 }
 
-static void audio(int16_t *pcm, uint32_t frames, void *opaque)
+static void audio_func(const int16_t *pcm, uint32_t frames, void *opaque)
 {
-	struct context *context = (struct context *) opaque;
+	struct context *ctx = opaque;
 
-	if (SDL_GetQueuedAudioSize(context->audio) < 20000)
-		SDL_QueueAudio(context->audio, pcm, frames * 2 * sizeof(int16_t));
+	if (ctx->audio)
+		MTY_AudioQueue(ctx->audio, pcm, frames);
 }
 
-static void userData(struct context *context, uint32_t id, uint32_t bufferKey)
+static void userData(struct context *ctx, uint32_t id, uint32_t bufferKey)
 {
-	char *msg = ParsecGetBuffer(context->parsec, bufferKey);
+	char *msg = ParsecGetBuffer(ctx->parsec, bufferKey);
 
-	if (msg && id == 7) // Parsec application user defined clipboard msg id
-		SDL_SetClipboardText(msg);
+	if (msg && id == PARSEC_APP_CLIPBOARD_MSG)
+		MTY_AppSetClipboard(ctx->app, msg);
 
-	ParsecFree(context->parsec, msg);
+	ParsecFree(ctx->parsec, msg);
 }
 
-static void cursor(struct context *context, ParsecCursor *cursor, uint32_t bufferKey)
+static void cursor_func(struct context *ctx, const ParsecCursor *cursor, uint32_t bufferKey)
 {
 	if (cursor->imageUpdate) {
-		uint8_t *image = ParsecGetBuffer(context->parsec, bufferKey);
+		uint8_t *image = ParsecGetBuffer(ctx->parsec, bufferKey);
 
 		if (image) {
-			SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(image, cursor->width, cursor->height,
-				32, cursor->width * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
-			SDL_Cursor *sdlCursor = SDL_CreateColorCursor(surface, cursor->hotX, cursor->hotY);
-			SDL_SetCursor(sdlCursor);
-
-			SDL_FreeCursor(context->cursor);
-			context->cursor = sdlCursor;
-
-			SDL_FreeSurface(context->surface);
-			context->surface = surface;
-
-			ParsecFree(context->parsec, image);
+			MTY_AppSetPNGCursor(ctx->app, image, cursor->size, cursor->hotX, cursor->hotY);
+			ParsecFree(ctx->parsec, image);
 		}
 	}
 
-	if (cursor->modeUpdate) {
-		if (SDL_GetRelativeMouseMode() && !cursor->relative) {
-			SDL_SetRelativeMouseMode(SDL_DISABLE);
-			SDL_WarpMouseInWindow(context->window, cursor->positionX, cursor->positionY);
+	bool relative = cursor->relative || cursor->hidden;
 
-		} else if (!SDL_GetRelativeMouseMode() && cursor->relative) {
-			SDL_SetRelativeMouseMode(SDL_ENABLE);
+	if (MTY_AppGetRelativeMouse(ctx->app) && !relative) {
+		MTY_AppSetRelativeMouse(ctx->app, false);
+		MTY_WindowWarpCursor(ctx->app, 0, cursor->positionX, cursor->positionY);
+
+	} else if (!MTY_AppGetRelativeMouse(ctx->app) && relative) {
+		MTY_AppSetRelativeMouse(ctx->app, true);
+	}
+}
+
+static void *audioThread(void *opaque)
+{
+	struct context *ctx = opaque;
+
+	while (!ctx->done)
+		ParsecClientPollAudio(ctx->parsec, audio_func, 100, ctx);
+
+	return NULL;
+}
+
+static void *renderThread(void *opaque)
+{
+	struct context *ctx = opaque;
+
+	MTY_WindowMakeCurrent(ctx->app, 0, true);
+
+	while (!ctx->done) {
+		uint32_t w = 0, h = 0;
+		MTY_WindowGetSize(ctx->app, 0, &w, &h);
+
+		float scale = MTY_WindowGetScreenScale(ctx->app, 0);
+
+		ParsecClientSetDimensions(ctx->parsec, DEFAULT_STREAM, w, h, scale);
+		ParsecClientGLRenderFrame(ctx->parsec, DEFAULT_STREAM, NULL, NULL, 100);
+
+		MTY_WindowPresent(ctx->app, 0, 1);
+	}
+
+	ParsecClientGLDestroy(ctx->parsec, DEFAULT_STREAM);
+	MTY_WindowSetGFX(ctx->app, 0, MTY_GFX_NONE, false);
+
+	return NULL;
+}
+
+static void event_func(const MTY_Event *evt, void *opaque)
+{
+	struct context *ctx = opaque;
+
+	if (evt->type == MTY_EVENT_CLIPBOARD) {
+		char *text = MTY_AppGetClipboard(ctx->app);
+
+		if (text)
+			ParsecClientSendUserData(ctx->parsec, PARSEC_APP_CLIPBOARD_MSG, text);
+
+		MTY_Free(text);
+
+	} else {
+		ParsecMessage msg = {0};
+		MTY_EVENT_TO_PARSEC(evt, &msg);
+
+		if (msg.type != 0)
+			ParsecClientSendMessage(ctx->parsec, &msg);
+	}
+
+	if (evt->type == MTY_EVENT_CLOSE)
+		ctx->done = true;
+}
+
+static bool app_func(void *opaque)
+{
+	struct context *ctx = opaque;
+
+	for (ParsecClientEvent event; ParsecClientPollEvents(ctx->parsec, 0, &event);) {
+		switch (event.type) {
+			case CLIENT_EVENT_CURSOR:
+				cursor_func(ctx, &event.cursor.cursor, event.cursor.key);
+				break;
+			case CLIENT_EVENT_USER_DATA:
+				userData(ctx, event.userData.id, event.userData.key);
+				break;
+			case CLIENT_EVENT_RUMBLE:
+				break;
+			default:
+				break;
 		}
 	}
-}
 
-static int32_t audioThread(void *opaque)
-{
-	struct context *context = (struct context *) opaque;
+	ParsecStatus e = ParsecClientGetStatus(ctx->parsec, NULL);
 
-	while (!context->done)
-		ParsecClientPollAudio(context->parsec, audio, 100, context);
-
-	return 0;
-}
-
-static int32_t renderThread(void *opaque)
-{
-	struct context *context = (struct context *) opaque;
-
-	SDL_GLContext *gl = SDL_GL_CreateContext(context->window);
-	SDL_GL_SetSwapInterval(1);
-
-	void (*glFinish)(void) = (void (*)(void)) SDL_GL_GetProcAddress("glFinish");
-
-	while (!context->done) {
-		ParsecClientGLRenderFrame(context->parsec, 100);
-		SDL_GL_SwapWindow(context->window);
-		glFinish();
+	if (e != PARSEC_CONNECTING && e != PARSEC_OK) {
+		MTY_ShowMessageBox("Parsec Error", "Parsec error: %d", e);
+		ctx->done = true;
 	}
 
-	ParsecClientGLDestroy(context->parsec);
-	SDL_GL_DeleteContext(gl);
-
-	return 0;
+	return !ctx->done;
 }
 
 int32_t main(int32_t argc, char **argv)
 {
+	struct context ctx = {0};
+
 	if (argc < 3) {
-		printf("Usage: demo sessionID peerID\n");
+		printf("Usage: client sessionID peerID\n");
 		return 1;
 	}
 
-	struct context context = {0};
-
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
-
-	SDL_AudioSpec want = {0}, have;
-	want.freq = 48000;
-	want.format = AUDIO_S16;
-	want.channels = 2;
-	want.samples = 2048;
-
-	context.audio = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-	SDL_PauseAudioDevice(context.audio, 0);
-
-	context.window = SDL_CreateWindow("Parsec Client Demo", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		WINDOW_W, WINDOW_H, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-
-	int32_t glW = 0;
-	SDL_GL_GetDrawableSize(context.window, &glW, NULL);
-	float scale = (float) glW / (float) WINDOW_W;
-
-	ParsecStatus e = ParsecInit(NULL, NULL, SDK_PATH, &context.parsec);
-	if (e != PARSEC_OK) goto except;
-
-	ParsecSetLogCallback(context.parsec, logCallback, NULL);
-
-	e = ParsecClientConnect(context.parsec, NULL, argv[1], argv[2]);
-	if (e != PARSEC_OK) goto except;
-
-	ParsecClientSetDimensions(context.parsec, WINDOW_W, WINDOW_H, scale);
-
-	SDL_Thread *render_thread = SDL_CreateThread(renderThread, "renderThread", &context);
-	SDL_Thread *audio_thread = SDL_CreateThread(audioThread, "audioThread", &context);
-
-	while (!context.done) {
-		for (SDL_Event msg; SDL_PollEvent(&msg);) {
-			ParsecMessage pmsg = {0};
-
-			switch (msg.type) {
-				case SDL_QUIT:
-					context.done = true;
-					break;
-				case SDL_WINDOWEVENT:
-					if (msg.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-						ParsecClientSetDimensions(context.parsec, msg.window.data1, msg.window.data2, scale);
-					break;
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
-					pmsg.type = MESSAGE_KEYBOARD;
-					pmsg.keyboard.code = (ParsecKeycode) msg.key.keysym.scancode;
-					pmsg.keyboard.mod = msg.key.keysym.mod;
-					pmsg.keyboard.pressed = msg.key.type == SDL_KEYDOWN;
-					break;
-				case SDL_MOUSEMOTION:
-					pmsg.type = MESSAGE_MOUSE_MOTION;
-					pmsg.mouseMotion.relative = SDL_GetRelativeMouseMode();
-					pmsg.mouseMotion.x = pmsg.mouseMotion.relative ? msg.motion.xrel : msg.motion.x;
-					pmsg.mouseMotion.y = pmsg.mouseMotion.relative ? msg.motion.yrel : msg.motion.y;
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-				case SDL_MOUSEBUTTONUP:
-					pmsg.type = MESSAGE_MOUSE_BUTTON;
-					pmsg.mouseButton.button = msg.button.button;
-					pmsg.mouseButton.pressed = msg.button.type == SDL_MOUSEBUTTONDOWN;
-					break;
-				case SDL_MOUSEWHEEL:
-					pmsg.type = MESSAGE_MOUSE_WHEEL;
-					pmsg.mouseWheel.x = msg.wheel.x;
-					pmsg.mouseWheel.y = msg.wheel.y;
-					break;
-				case SDL_CLIPBOARDUPDATE:
-					ParsecClientSendUserData(context.parsec, MSG_CLIPBOARD, SDL_GetClipboardText());
-					break;
-				case SDL_CONTROLLERBUTTONDOWN:
-				case SDL_CONTROLLERBUTTONUP:
-					pmsg.type = MESSAGE_GAMEPAD_BUTTON;
-					pmsg.gamepadButton.id = msg.cbutton.which;
-					pmsg.gamepadButton.button = msg.cbutton.button;
-					pmsg.gamepadButton.pressed = msg.cbutton.type == SDL_CONTROLLERBUTTONDOWN;
-					break;
-				case SDL_CONTROLLERAXISMOTION:
-					pmsg.type = MESSAGE_GAMEPAD_AXIS;
-					pmsg.gamepadAxis.id = msg.caxis.which;
-					pmsg.gamepadAxis.axis = msg.caxis.axis;
-					pmsg.gamepadAxis.value = msg.caxis.value;
-					break;
-				case SDL_CONTROLLERDEVICEADDED:
-					SDL_GameControllerOpen(msg.cdevice.which);
-					break;
-				case SDL_CONTROLLERDEVICEREMOVED:
-					pmsg.type = MESSAGE_GAMEPAD_UNPLUG;
-					pmsg.gamepadUnplug.id = msg.cdevice.which;
-					SDL_GameControllerClose(SDL_GameControllerFromInstanceID(msg.cdevice.which));
-					break;
-			}
-
-			if (pmsg.type != 0) {
-				if (ParsecClientSendMessage(context.parsec, &pmsg) != PARSEC_OK)
-					context.done = true;
-			}
-		}
-
-		for (ParsecClientEvent event; ParsecClientPollEvents(context.parsec, 0, &event);) {
-			switch (event.type) {
-				case CLIENT_EVENT_CURSOR:
-					cursor(&context, &event.cursor.cursor, event.cursor.key);
-					break;
-				case CLIENT_EVENT_USER_DATA:
-					userData(&context, event.userData.id, event.userData.key);
-					break;
-				case CLIENT_EVENT_RUMBLE:
-					break;
-				default:
-					break;
-			}
-		}
-
-		SDL_Delay(1);
-	}
-
-	SDL_WaitThread(audio_thread, NULL);
-	SDL_WaitThread(render_thread, NULL);
-
-	except:
-
+	ParsecStatus e = ParsecInit(NULL, NULL, SDK_PATH, &ctx.parsec);
 	if (e != PARSEC_OK) {
-		char error[32];
-		snprintf(error, 32, "Parsec error: %d\n", e);
-		SDL_ShowSimpleMessageBox(0, "Parsec Error", error, NULL);
+		MTY_ShowMessageBox("Parsec Error", "Parsec error: %d", e);
+		return 1;
 	}
 
-	ParsecDestroy(context.parsec);
+	ctx.audio = MTY_AudioCreate(48000, 75, 150);
+	ctx.app = MTY_AppCreate(app_func, event_func, &ctx);
 
-	SDL_DestroyWindow(context.window);
-	SDL_CloseAudioDevice(context.audio);
-	SDL_Quit();
+	MTY_WindowDesc desc = {
+		.title = "Parsec Client Demo",
+		.api = MTY_GFX_GL,
+		.width = 1280,
+		.height = 720,
+	};
+
+	MTY_WindowCreate(ctx.app, &desc);
+
+	ParsecSetLogCallback(ctx.parsec, logCallback, NULL);
+
+	ParsecClientConfig cfg = PARSEC_CLIENT_DEFAULTS;
+	cfg.pngCursor = true;
+	ParsecClientConnect(ctx.parsec, &cfg, argv[1], argv[2]);
+
+	MTY_Thread *render_thread = MTY_ThreadCreate(renderThread, &ctx);
+	MTY_Thread *audio_thread = MTY_ThreadCreate(audioThread, &ctx);
+
+	MTY_AppSetTimeout(ctx.app, 1);
+	MTY_AppRun(ctx.app);
+
+	MTY_ThreadDestroy(&audio_thread);
+	MTY_ThreadDestroy(&render_thread);
+
+	ParsecDestroy(ctx.parsec);
+
+	MTY_AppDestroy(&ctx.app);
+	MTY_AudioDestroy(&ctx.audio);
 
 	return 0;
 }

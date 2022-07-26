@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using static Parsec.Parsec;
+using ParsecGaming;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,13 +13,13 @@ public class GameManager : MonoBehaviour
     public InputField ShortLinkUri;
     public Text StatusField;
     public Toggle IsPublicGame;
-    private ParsecStreamer streamer;
+    private ParsecStreamGeneral streamer;
     private ParsecUnity.API.SessionResultDataData authdata;
 
     void Awake()
     {
-        SpawnPlayer(1, new ParsecGuest());
-        streamer = GameObject.Find("Main Camera").gameObject.GetComponent<ParsecStreamer>();
+        SpawnPlayer(1, new Parsec.ParsecGuest());
+        streamer = GameObject.Find("Main Camera").gameObject.GetComponent<ParsecStreamGeneral>();
         if (streamer != null)
         {
             streamer.GuestConnected += Streamer_GuestConnected;
@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
         return 0;
     }
 
-    private void Streamer_GuestDisconnected(object sender, Parsec.Parsec.ParsecGuest guest)
+    private void Streamer_GuestDisconnected(object sender, Parsec.ParsecGuest guest)
     {
         if (m_Players == null) return;
         for (int i = 0; i < m_Players.Length; i++)
@@ -50,14 +50,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Streamer_GuestConnected(object sender, Parsec.Parsec.ParsecGuest guest)
+    private void Streamer_GuestConnected(object sender, Parsec.ParsecGuest guest)
     {
         int iPlayer = GetFreePlayer();
         if (iPlayer == 0) return;
         SpawnPlayer(iPlayer, guest);
     }
 
-    public void SpawnPlayer(int player, ParsecGuest guest)
+    public void SpawnPlayer(int player, Parsec.ParsecGuest guest)
     {
         if (m_Players == null) return;
         if (player >= 1 && player <= m_Players.Length)
@@ -73,7 +73,7 @@ public class GameManager : MonoBehaviour
     public void GetAccessCode()
     {
         //Replace the Game ID with your own.
-        ParsecUnity.API.SessionData sessionData = streamer.RequestCodeAndPoll("1QA1vfr0Lm0SQD5QrEsP9JJFduY");
+        ParsecUnity.API.SessionData sessionData = streamer.RequestCodeAndPoll();
         if ((sessionData != null) && (sessionData.data != null))
         {
             VerificationUri.text = sessionData.data.verification_uri;
@@ -111,7 +111,7 @@ public class GameManager : MonoBehaviour
     public void StartParsec()
     {
         streamer.StartParsec(m_Players.Length, IsPublicGame.isOn, "Unity Test", "An Example Unity Project", authdata.id);
-        ShortLinkUri.text = streamer.GetInviteUrl(authdata, 600, 10);
+        ShortLinkUri.text = streamer.GetInviteUrl(authdata);
     }
 
     public void StopParsec()

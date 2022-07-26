@@ -7,7 +7,10 @@
 
 #include "audio.h"
 
-static void logCallback(enum ParsecLogLevel level, char *msg, void *opaque)
+#define SESSION_ID "sessionID"
+#define PEER_ID    "peerID"
+
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
     printf("[%s] %s\n", level == LOG_DEBUG ? "D" : "I", msg);
 }
@@ -23,32 +26,32 @@ bool _glInit = false;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    
-    EAGLContext * context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+
+    EAGLContext * context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
     GLKView *view = [[GLKView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     view.context = context;
     view.delegate = self;
-    
+
     GLKViewController * viewController = [[GLKViewController alloc] initWithNibName:nil bundle:nil];
     viewController.view = view;
     viewController.delegate = self;
     viewController.preferredFramesPerSecond = 60;
     self.window.rootViewController = viewController;
-    
+
     self.window.backgroundColor = [UIColor whiteColor];
     [self.window makeKeyAndVisible];
-    
+
     ParsecSetLogCallback(logCallback, NULL);
-    
+
     audio_init(&_audio);
-    
+
     ParsecInit(PARSEC_VER, NULL, NULL, &_parsec);
-    
-    ParsecStatus e = ParsecClientConnect(_parsec, NULL, "sessionID", "peerID"); // Performs peer-to-peer connection
-    
+
+    ParsecStatus e = ParsecClientConnect(_parsec, NULL, SESSION_ID, PEER_ID); // Performs peer-to-peer connection
+
     if (e != PARSEC_OK)
         NSLog(@"ParsecClientConnect=%d", e);
-    
+
     return YES;
 }
 
@@ -62,9 +65,9 @@ bool _glInit = false;
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect {
     ParsecClientPollAudio(_parsec, audio_cb, 0, _audio);
-    ParsecClientSetDimensions(_parsec, self.window.frame.size.width,
+    ParsecClientSetDimensions(_parsec, DEFAULT_STREAM, self.window.frame.size.width,
                               self.window.frame.size.height, [[UIScreen mainScreen] scale]);
-    ParsecClientGLRenderFrame(_parsec, 8);
+    ParsecClientGLRenderFrame(_parsec, DEFAULT_STREAM, NULL, NULL, 8);
     glFinish(); // May improve latency
 }
 
@@ -75,7 +78,7 @@ static void mouseMotion(Parsec *parsec, NSSet *touches, id window)
 {
     UITouch *touch = [touches anyObject];
     CGPoint point = [touch locationInView:window];
-    
+
     ParsecMessage msg = {};
     msg.type = MESSAGE_MOUSE_MOTION;
     msg.mouseMotion.relative = false;
@@ -96,7 +99,7 @@ static void mouseMotion(Parsec *parsec, NSSet *touches, id window)
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
     mouseMotion(_parsec, touches, self.window);
 }
-    
+
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     mouseMotion(_parsec, touches, self.window);
 

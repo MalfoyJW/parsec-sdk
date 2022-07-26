@@ -1,6 +1,11 @@
+!IF [if /I "%Platform%" EQU "x64" exit 1]
+BITS = 64
+!ELSE
+BITS = 32
+!ENDIF
+
 BIN_NAME = client.exe
 OBJS = main.obj
-STATIC_LIBS = lib/windows/SDL2.lib
 
 CFLAGS = \
 	/nologo \
@@ -8,11 +13,12 @@ CFLAGS = \
 	/O2 \
 	/MT \
 	/MP \
+	/wd4201 \
 	-I../../sdk \
 	-Iinclude \
+	-DBITS=$(BITS) \
 	-DWIN32_LEAN_AND_MEAN \
-	-DUNICODE \
-	-DWIN32
+	-DUNICODE
 
 SHARED_LIBS = \
 	libvcruntime.lib \
@@ -29,7 +35,21 @@ SHARED_LIBS = \
 	opengl32.lib \
 	user32.lib \
 	uuid.lib \
-	version.lib
+	version.lib \
+	setupapi.lib \
+	hid.lib \
+	dxgi.lib \
+	ws2_32.lib \
+	bcrypt.lib \
+	windowscodecs.lib \
+	dxguid.lib \
+	xinput9_1_0.lib \
+	d3d9.lib \
+	shlwapi.lib \
+	d3d11.lib
+
+STATIC_LIBS = \
+	lib/windows/%Platform%/matoya.lib
 
 LD_FLAGS = \
 	/nodefaultlib \

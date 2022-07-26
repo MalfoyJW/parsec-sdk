@@ -72,7 +72,7 @@ void audio_destroy(struct audio **ctx_out)
     *ctx_out = NULL;
 }
 
-void audio_cb(int16_t *pcm, uint32_t frames, void *opaque)
+void audio_cb(const int16_t *pcm, uint32_t frames, void *opaque)
 {
     struct audio *ctx = (struct audio *) opaque;
     

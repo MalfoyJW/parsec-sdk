@@ -1,16 +1,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
-#include <memory.h>
-
-#include <unistd.h>
 
 #include <jni.h>
 #include <android/log.h>
 
 #include "parsec.h"
-#include "aaudio.h"
 
-static void logCallback(ParsecLogLevel level, char *msg, void *opaque)
+static void logCallback(ParsecLogLevel level, const char *msg, void *opaque)
 {
     __android_log_print(ANDROID_LOG_INFO, "PARSEC", "%s", msg);
 }
@@ -41,24 +37,16 @@ Java_parsec_bindings_Parsec_init(JNIEnv *env, jobject instance)
     Parsec *parsec = NULL;
     ParsecInit(PARSEC_VER, NULL, NULL, &parsec);
 
-    struct aaduio *aaudio = NULL;
-    aaudio_init(&aaudio);
-
     setPointer(env, instance, "parsec", parsec);
-    setPointer(env, instance, "aaudio", aaudio);
 }
 
 JNIEXPORT void JNICALL
 Java_parsec_bindings_Parsec_destroy(JNIEnv *env, jobject instance)
 {
-    struct aaduio *aaudio = getPointer(env, instance, "aaudio");
-    aaudio_destroy(&aaudio);
-
     Parsec *parsec = getPointer(env, instance, "parsec");
     ParsecDestroy(parsec);
 
     setPointer(env, instance, "parsec", NULL);
-    setPointer(env, instance, "aaudio", NULL);
 }
 
 JNIEXPORT jint JNICALL
@@ -70,7 +58,7 @@ Java_parsec_bindings_Parsec_clientConnect(JNIEnv *env, jobject instance, jstring
     const char *cSessionID = (*env)->GetStringUTFChars(env, sessionID, 0);
     const char *cPeerID = (*env)->GetStringUTFChars(env, peerID, 0);
 
-    ParsecStatus e = ParsecClientConnect(parsec, NULL, (char *) cSessionID, (char *) cPeerID);
+    ParsecStatus e = ParsecClientConnect(parsec, NULL, cSessionID, cPeerID);
 
     (*env)->ReleaseStringUTFChars(env, sessionID, cSessionID);
     (*env)->ReleaseStringUTFChars(env, peerID, cPeerID);
@@ -78,13 +66,12 @@ Java_parsec_bindings_Parsec_clientConnect(JNIEnv *env, jobject instance, jstring
     return (jint) e;
 }
 
-JNIEXPORT void JNICALL
-Java_parsec_bindings_Parsec_clientPollAudio(JNIEnv *env, jobject instance)
+JNIEXPORT jint JNICALL
+Java_parsec_bindings_Parsec_clientGetStatus(JNIEnv *env, jobject instance)
 {
     Parsec *parsec = getPointer(env, instance, "parsec");
-    struct aaudio *aaudio = getPointer(env, instance, "aaudio");
 
-    ParsecClientPollAudio(parsec, aaudio_play, 0, aaudio);
+    return (jint) ParsecClientGetStatus(parsec, NULL);
 }
 
 JNIEXPORT void JNICALL
@@ -99,14 +86,7 @@ Java_parsec_bindings_Parsec_clientSetDimensions(JNIEnv *env, jobject instance,
     jint x, jint y)
 {
     Parsec *parsec = getPointer(env, instance, "parsec");
-    ParsecClientSetDimensions(parsec, (uint32_t) x, (uint32_t) y, 1.0f);
-}
-
-JNIEXPORT void JNICALL
-Java_parsec_bindings_Parsec_clientGLRenderFrame(JNIEnv *env, jobject instance)
-{
-    Parsec *parsec = getPointer(env, instance, "parsec");
-    ParsecClientGLRenderFrame(parsec, 0);
+    ParsecClientSetDimensions(parsec, 0, (uint32_t) x, (uint32_t) y, 1.0f);
 }
 
 JNIEXPORT jint JNICALL

@@ -1,3 +1,9 @@
+!IF [if /I "%Platform%" EQU "x64" exit 1]
+BITS = 64
+!ELSE
+BITS = 32
+!ENDIF
+
 BIN_NAME = host.exe
 OBJS = main.obj
 
@@ -8,9 +14,9 @@ CFLAGS = \
 	/MT \
 	/MP \
 	-I../../sdk \
+	-DBITS=$(BITS) \
 	-DWIN32_LEAN_AND_MEAN \
-	-DUNICODE \
-	-DWIN32
+	-DUNICODE
 
 SHARED_LIBS = \
 	libvcruntime.lib \
